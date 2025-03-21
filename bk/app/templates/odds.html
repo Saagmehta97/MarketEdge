@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sports Betting Odds</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1>Sports Betting Odds</h1>
+        <div class="live-switch-container">
+            <label for="live-toggle" class="live-switch-label">Show Live Games</label>
+            <label class="switch">
+                <input type="checkbox" id="live-toggle">
+                <span class="slider"></span>
+            </label>
+        </div>
+        <div class="last-updated">
+            Last Updated: {{ last_updated }}
+        </div>
+        <ul class="nav nav-tabs">
+            <li class="nav-item">
+                <a class="nav-link {{ 'active' if sport == 'baseball_mlb' else '' }}"
+                    href="/?sport=baseball_mlb">MLB</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ 'active' if sport == 'americanfootball_nfl' else '' }}"
+                    href="/?sport=americanfootball_nfl">NFL</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ 'active' if sport == 'basketball_nba' else '' }}"
+                    href="/?sport=basketball_nba">NBA</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ 'active' if sport == 'basketball_wnba' else '' }}"
+                    href="/?sport=basketball_wnba">WNBA</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ 'active' if sport == 'americanfootball_ncaaf' else '' }}"
+                    href="/?sport=americanfootball_ncaaf">NCAAF</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ 'active' if sport == 'mma_mixed_martial_arts' else '' }}"
+                    href="/?sport=mma_mixed_martial_arts">MMA</a>
+            </li>
+            
+            <li class="nav-item">
+                <a class="nav-link {{ 'active' if sport == 'tennis_atp_us_open' else '' }}"
+                    href="/?sport=tennis_atp_us_open">Men's Tennis</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ 'active' if sport == 'tennis_wta_us_open' else '' }}"
+                    href="/?sport=tennis_wta_us_open">Women's Tennis</a>
+            </li>
+
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true"
+                    aria-expanded="false">More Sports</a>
+                <div class="dropdown-menu">
+                    <!-- <a class="dropdown-item" href="/?sport=aussierules_afl">AFL</a> -->
+                    <a class="dropdown-item" href="/?sport=baseball_kbo">KBO</a>
+                    <!-- <a class="dropdown-item" href="/?sport=baseball_milb">MiLB</a>
+                    <a class="dropdown-item" href="/?sport=baseball_ncaa">NCAA Baseball</a> -->
+                    <a class="dropdown-item" href="/?sport=baseball_npb">NPB</a>
+                    <!-- <a class="dropdown-item" href="/?sport=cricket_t20_blast">T20 Blast</a>
+                    <a class="dropdown-item" href="/?sport=soccer_brazil_campeonato">Brazil Série A</a>
+                    <a class="dropdown-item" href="/?sport=soccer_brazil_serie_b">Brazil Série B</a>
+                    <a class="dropdown-item" href="/?sport=soccer_china_superleague">Super League - China</a>
+                    <a class="dropdown-item" href="/?sport=soccer_conmebol_copa_libertadores">Copa Libertadores</a>
+                    <a class="dropdown-item" href="/?sport=soccer_epl">EPL</a>
+                    <a class="dropdown-item" href="/?sport=soccer_finland_veikkausliiga">Veikkausliiga - Finland</a>
+                    <a class="dropdown-item" href="/?sport=soccer_japan_j_league">J League</a>
+                    <a class="dropdown-item" href="/?sport=soccer_korea_kleague1">K League 1</a>
+                    <a class="dropdown-item" href="/?sport=soccer_league_of_ireland">League of Ireland</a>
+                    <a class="dropdown-item" href="/?sport=soccer_mexico_ligamx">Liga MX</a>
+                    <a class="dropdown-item" href="/?sport=soccer_norway_eliteserien">Eliteserien - Norway</a>
+                    <a class="dropdown-item" href="/?sport=soccer_spain_segunda_division">La Liga 2 - Spain</a>
+                    <a class="dropdown-item" href="/?sport=soccer_sweden_allsvenskan">Allsvenskan - Sweden</a>
+                    <a class="dropdown-item" href="/?sport=soccer_sweden_superettan">Superettan - Sweden</a> -->
+                </div>
+            </li>
+        </ul>
+        <div id="games-container">
+            {% if games %}
+                {% for game in games %}
+                <div class="card mt-3 game-card" data-is-live="{{ game.is_live }}">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ game.away_team }} @ {{ game.home_team }}</h5>
+                        <p class="card-text">Start Time: {{ game.commence_time }}</p>
+                        <div class="row text-center mb-2">
+                            {% for bookmaker in game.bookmakers %}
+                            <div class="col-md-6">
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% for market in game.formatted_markets %}
+                        <div class="inline-market">
+                            <h6>{{ market.type.capitalize().replace('H2h', 'Moneyline') }}</h6>
+                            {% for data in market.data %}
+                            <div class="row text-center inline-outcome">
+                                <div class="col-md-6">
+                                    <span>{{ data.name }} {{ data.my_point }}: {{ data.my_book }}</span>
+                                    <img src="{{ url_for('static', filename='img/' ~ data.book_name ~ '_logo.jpg') }}" class="book_logo" alt="{{ data.book_name }} Logo" height="20">
+                                </div>
+                                <div class="col-md-6">
+                                    <span>{{ data.name }} {{ data.p_point }}: {{ data.pinnacle }}</span>
+                                    <img src="static/img/pinnacle_logo.jpg"  class="book_logo" alt="Pinnacle Logo" height="20">
+                                </div>
+                                <div class="col-md-6">
+                                    <span>{{ data.pct_edge }}</span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="alert alert-info">
+                    No games available for this sport at the moment.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
+</body>
+
+</html>

@@ -1,5 +1,6 @@
 import {
   Links,
+  LiveReload,
   Meta,
   Outlet,
   Scripts,
@@ -8,21 +9,13 @@ import {
 import type { LinksFunction } from "@remix-run/node";
 
 import "./tailwind.css";
+import Navigation from "./components/Navigation";
 
 export const links: LinksFunction = () => [
-  { rel: "preconnect", href: "https://fonts.googleapis.com" },
-  {
-    rel: "preconnect",
-    href: "https://fonts.gstatic.com",
-    crossOrigin: "anonymous",
-  },
-  {
-    rel: "stylesheet",
-    href: "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
-  },
+  { rel: "stylesheet", href: "/build/tailwind.css" },
 ];
 
-export function Layout({ children }: { children: React.ReactNode }) {
+export default function App() {
   return (
     <html lang="en">
       <head>
@@ -31,15 +24,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Meta />
         <Links />
       </head>
-      <body>
-        {children}
+      <body className="bg-gray-100">
+        <div className="flex min-h-screen">
+          <Navigation />
+          <main className="flex-1 p-8">
+            <Outlet />
+          </main>
+        </div>
         <ScrollRestoration />
         <Scripts />
+        <LiveReload />
       </body>
     </html>
   );
-}
-
-export default function App() {
-  return <Outlet />;
 }

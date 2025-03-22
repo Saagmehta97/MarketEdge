@@ -1,26 +1,29 @@
 import { useState, useEffect } from 'react';
 
+// Updated interface to match the backend API response
+interface GameOdds {
+  moneyline: {
+    home: number;
+    away: number;
+  };
+  spread: {
+    home: number;
+    away: number;
+    points: number;
+  };
+  total: {
+    over: number;
+    under: number;
+    points: number;
+  };
+}
+
 interface GameCardProps {
   id: string;
   homeTeam: string;
   awayTeam: string;
   startTime: string;
-  odds: {
-    moneyline: {
-      home: number;
-      away: number;
-    };
-    spread: {
-      home: number;
-      away: number;
-      points: number;
-    };
-    total: {
-      over: number;
-      under: number;
-      points: number;
-    };
-  };
+  odds: GameOdds;
   isStarred?: boolean;
   onToggleFollow?: () => void;
 }
@@ -30,7 +33,7 @@ export default function GameCard({
   homeTeam, 
   awayTeam, 
   startTime, 
-  odds, 
+  odds,
   isStarred = false,
   onToggleFollow 
 }: GameCardProps) {
@@ -70,41 +73,104 @@ export default function GameCard({
         </button>
       </div>
 
-      <div className="grid grid-cols-3 gap-4 mt-4">
-        <div className="border-r border-gray-200 pr-4">
-          <h4 className="text-sm font-semibold text-gray-600">Moneyline</h4>
-          <div className="mt-1">
-            <p>{homeTeam}: {formatOdds(odds.moneyline.home)}</p>
-            <p>{awayTeam}: {formatOdds(odds.moneyline.away)}</p>
+      <div className="space-y-4">
+        {/* Check if odds exists */}
+        {odds ? (
+          <>
+            {/* Moneyline */}
+            {odds.moneyline && (
+              <div className="border-t border-gray-200 pt-3 first:border-t-0 first:pt-0">
+                <h4 className="text-sm font-bold uppercase text-gray-700 mb-2">Moneyline</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded p-3 bg-gray-50">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="font-semibold">{homeTeam}</p>
+                        <div className="flex items-center space-x-2 text-sm">
+                          <span>{odds.moneyline.home}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="rounded p-3 bg-gray-50">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="font-semibold">{awayTeam}</p>
+                        <div className="flex items-center space-x-2 text-sm">
+                          <span>{odds.moneyline.away}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Spread */}
+            {odds.spread && (
+              <div className="border-t border-gray-200 pt-3">
+                <h4 className="text-sm font-bold uppercase text-gray-700 mb-2">Spread</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded p-3 bg-gray-50">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="font-semibold">{homeTeam} {odds.spread.points}</p>
+                        <div className="flex items-center space-x-2 text-sm">
+                          <span>{odds.spread.home}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="rounded p-3 bg-gray-50">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="font-semibold">{awayTeam} {-1 * odds.spread.points}</p>
+                        <div className="flex items-center space-x-2 text-sm">
+                          <span>{odds.spread.away}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Totals */}
+            {odds.total && (
+              <div className="border-t border-gray-200 pt-3">
+                <h4 className="text-sm font-bold uppercase text-gray-700 mb-2">Total</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded p-3 bg-gray-50">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="font-semibold">Over {odds.total.points}</p>
+                        <div className="flex items-center space-x-2 text-sm">
+                          <span>{odds.total.over}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="rounded p-3 bg-gray-50">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="font-semibold">Under {odds.total.points}</p>
+                        <div className="flex items-center space-x-2 text-sm">
+                          <span>{odds.total.under}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="text-center py-4 text-gray-500">
+            <p>No odds data available for this game</p>
+            <p className="text-xs mt-2">Check if the odds data is being correctly passed</p>
           </div>
-        </div>
-        
-        <div className="border-r border-gray-200 px-4">
-          <h4 className="text-sm font-semibold text-gray-600">Spread</h4>
-          <div className="mt-1">
-            <p>{homeTeam}: {formatPoint(odds.spread.points)} ({formatOdds(odds.spread.home)})</p>
-            <p>{awayTeam}: {formatPoint(-odds.spread.points)} ({formatOdds(odds.spread.away)})</p>
-          </div>
-        </div>
-        
-        <div className="pl-4">
-          <h4 className="text-sm font-semibold text-gray-600">Total</h4>
-          <div className="mt-1">
-            <p>Over {odds.total.points}: {formatOdds(odds.total.over)}</p>
-            <p>Under {odds.total.points}: {formatOdds(odds.total.under)}</p>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
-}
-
-// Helper function to format American odds with + sign when positive
-function formatOdds(odds: number): string {
-  return odds > 0 ? `+${odds}` : `${odds}`;
-}
-
-// Helper function to format point spreads with + sign when positive
-function formatPoint(point: number): string {
-  return point > 0 ? `+${point}` : `${point}`;
 } 

@@ -7,10 +7,21 @@ import SportTabs from "../components/SportTabs";
 import { useState, useEffect } from "react";
 
 // Define types for our data
-type OddsType = {
-  moneyline: { home: number; away: number };
-  spread: { home: number; away: number; points: number };
-  total: { over: number; under: number; points: number };
+type GameOdds = {
+  moneyline: {
+    home: number;
+    away: number;
+  };
+  spread: {
+    home: number;
+    away: number;
+    points: number;
+  };
+  total: {
+    over: number;
+    under: number;
+    points: number;
+  };
 };
 
 type GameType = {
@@ -18,7 +29,7 @@ type GameType = {
   homeTeam: string;
   awayTeam: string;
   startTime: string;
-  odds: OddsType;
+  odds: GameOdds;
   isStarred?: boolean;
 };
 
@@ -63,8 +74,15 @@ export const loader: LoaderFunction = async ({ request }) => {
       throw new Error(`Failed to fetch events: ${eventsResponse.status}`);
     }
     
+    // This is already transformed by the backend
     const games = await eventsResponse.json();
     
+    console.log("Games fetched from backend:", games);
+    if (games.length > 0) {
+      console.log("Sample game data structure:", JSON.stringify(games[0], null, 2));
+    }
+    
+    // Return the data without additional transformation
     return json<LoaderData>({ games, sport, availableSports });
   } catch (error) {
     console.error("Error fetching data:", error);
@@ -76,9 +94,28 @@ export const loader: LoaderFunction = async ({ request }) => {
 export default function Sports() {
   const { games, sport, availableSports } = useLoaderData<LoaderData>();
   const [isLiveOnly, setIsLiveOnly] = useState(false);
+  const [showOnlyEdges, setShowOnlyEdges] = useState(true);
   const [filteredGames, setFilteredGames] = useState<GameType[]>(games);
   const [isAutoRefresh, setIsAutoRefresh] = useState(false);
   const fetcher = useFetcher<LoaderData>();
+  
+  // Log the game data structure to debug
+  useEffect(() => {
+    console.log("Games from backend:", games);
+    if (games.length > 0) {
+      console.log("First game structure:", JSON.stringify(games[0], null, 2));
+      // Check structure of the first game to debug
+      const game = games[0];
+      console.log("Game properties:");
+      console.log("id:", game.id);
+      console.log("homeTeam:", game.homeTeam);
+      console.log("awayTeam:", game.awayTeam);
+      console.log("startTime:", game.startTime);
+      console.log("Odds structure:", game.odds);
+    } else {
+      console.log("No games returned from backend");
+    }
+  }, [games]);
   
   // Auto-refresh data every 30 seconds when enabled
   useEffect(() => {
@@ -99,24 +136,40 @@ export default function Sports() {
   // Update games when fetcher returns new data
   useEffect(() => {
     if (fetcher.data?.games) {
-      setFilteredGames(
-        isLiveOnly 
-          ? fetcher.data.games.filter((_game, index) => index % 2 === 0)
-          : fetcher.data.games
-      );
+      let newGames = fetcher.data.games;
+      
+      if (isLiveOnly) {
+        // In a real app, you would filter based on an isLive property
+        newGames = newGames.filter((_game, index) => index % 2 === 0);
+      }
+      
+      if (showOnlyEdges) {
+        // For now, since we don't have edge data in the new format,
+        // we'll just keep all games
+        // In a real app, you would filter based on your edge criteria
+      }
+      
+      setFilteredGames(newGames);
     }
-  }, [fetcher.data, isLiveOnly]);
+  }, [fetcher.data, isLiveOnly, showOnlyEdges]);
   
-  // Filter games when live-only toggle changes or games change
+  // Filter games when filters change or games change
   useEffect(() => {
+    let newFilteredGames = [...games];
+    
     if (isLiveOnly) {
       // In a real app, you would filter based on an isLive property
-      // This is a placeholder for demonstration
-      setFilteredGames(games.filter((_game, index) => index % 2 === 0)); // Just a sample filter
-    } else {
-      setFilteredGames(games);
+      newFilteredGames = newFilteredGames.filter((_game, index) => index % 2 === 0);
     }
-  }, [games, isLiveOnly]);
+    
+    if (showOnlyEdges) {
+      // For now, since we don't have edge data in the new format,
+      // we'll just keep all games
+      // In a real app, you would filter based on your edge criteria
+    }
+    
+    setFilteredGames(newFilteredGames);
+  }, [games, isLiveOnly, showOnlyEdges]);
   
   // Handle starring/following an event
   const handleToggleFollow = async (gameId: string, isCurrentlyStarred: boolean) => {
@@ -167,6 +220,16 @@ export default function Sports() {
             <input 
               type="checkbox" 
               className="form-checkbox text-olive h-5 w-5" 
+              checked={showOnlyEdges}
+              onChange={(e) => setShowOnlyEdges(e.target.checked)}
+            />
+            <span>Show Only Games with Edges</span>
+          </label>
+          
+          <label className="flex items-center space-x-2">
+            <input 
+              type="checkbox" 
+              className="form-checkbox text-olive h-5 w-5" 
               checked={isAutoRefresh}
               onChange={(e) => setIsAutoRefresh(e.target.checked)}
             />
@@ -192,7 +255,9 @@ export default function Sports() {
           ))
         ) : (
           <div className="bg-blue-100 text-blue-700 p-4 rounded">
-            No games available for this sport at the moment.
+            {showOnlyEdges ? 
+              "No games with betting edges available for this sport at the moment." :
+              "No games available for this sport at the moment."}
           </div>
         )}
       </div>

@@ -1,14 +1,36 @@
 from flask import Flask, render_template, request, jsonify
 from apscheduler.schedulers.background import BackgroundScheduler
-from scripts.get_data import fetch_odds,process_games 
+from scripts.get_data import fetch_odds, process_games 
 from scripts.dbactions import process_db
 from app.sport import get_sports
 import json 
 from datetime import datetime
+import os
 
 app = Flask(__name__)
 
-def retrieve_data(): 
+# Add a global variable to store starred/followed events
+# In a production app, this would be stored in a database
+starred_events = set()
+
+def retrieve_data(force=False): 
+    # Check if we already have data files
+    data_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
+    data_exists = False
+    
+    if os.path.exists(data_dir):
+        # Check if at least one sports data file exists
+        for file in os.listdir(data_dir):
+            if file.endswith('.json') and not file == 'sports.json':
+                data_exists = True
+                break
+    
+    # If we have data and force is False, don't fetch new data
+    if data_exists and not force:
+        print("Data files already exist. Skipping API call to save quota.")
+        print("To force update, call retrieve_data(force=True)")
+        return
+        
     quota = 0
     sports = [
         'baseball_mlb',
@@ -84,15 +106,135 @@ def home():
 
 @app.route('/sports')
 def sports():
-    sports = get_sports()
-    return list(sports)
-    # try:
-    #     with open('data/processed_games.json', 'r')
- 
-#Initial run
-# retrieve_data()
+    """
+    Return a list of available sports.
+    Returns:
+        Array<string>: List of sport IDs
+    """
+    sports_list = list(get_sports())
+    # Create a more frontend-friendly mapping for display
+    return jsonify(sports_list)
+
+@app.route('/events')
+def events():
+    """
+    Return a list of events/games based on sport and starred status.
+    Query Parameters:
+        sport (string): Sport ID to filter events
+        starred (boolean): Whether to show only starred/followed events
+    Returns:
+        Array<EventObject>: List of events matching the criteria
+    """
+    sport_key = request.args.get('sport', 'all')
+    starred_param = request.args.get('starred', 'false').lower() == 'true'
+    
+    try:
+        # Load processed games from the file
+        with open('data/processed_games.json', 'r') as f:
+            data = json.load(f)
+        
+        # Remove last_update key since it's not a sport
+        if 'last_update' in data:
+            last_updated = data.pop('last_update')
+        
+        # Get games based on sport
+        if sport_key == 'all':
+            # Flatten all games from all sports
+            all_games = []
+            for sport_games in data.values():
+                if isinstance(sport_games, list):
+                    all_games.extend(sport_games)
+            games = all_games
+        else:
+            games = data.get(sport_key, [])
+        
+        # Filter for starred/followed events if requested
+        if starred_param:
+            games = [game for game in games if game.get('id') in starred_events]
+        
+        # Transform games to match the frontend's expected format
+        transformed_games = []
+        for game in games:
+            try:
+                # Extract the necessary odds from formatted markets
+                odds = {
+                    "moneyline": {"home": 0, "away": 0},
+                    "spread": {"home": 0, "away": 0, "points": 0},
+                    "total": {"over": 0, "under": 0, "points": 0}
+                }
+                
+                for market in game.get('formatted_markets', []):
+                    market_type = market.get('type')
+                    market_data = market.get('data', [])
+                    
+                    if market_type == 'h2h':  # Moneyline
+                        for outcome in market_data:
+                            if outcome['name'] == game['home_team']:
+                                odds["moneyline"]["home"] = int(outcome['my_book'])
+                            elif outcome['name'] == game['away_team']:
+                                odds["moneyline"]["away"] = int(outcome['my_book'])
+                    
+                    elif market_type == 'spreads':  # Spread
+                        for outcome in market_data:
+                            if outcome['name'] == game['home_team']:
+                                odds["spread"]["home"] = int(outcome['my_book'])
+                                odds["spread"]["points"] = float(outcome['my_point'])
+                            elif outcome['name'] == game['away_team']:
+                                odds["spread"]["away"] = int(outcome['my_book'])
+                    
+                    elif market_type == 'totals':  # Total
+                        for outcome in market_data:
+                            if outcome['name'] == 'Over':
+                                odds["total"]["over"] = int(outcome['my_book'])
+                                odds["total"]["points"] = float(outcome['my_point'])
+                            elif outcome['name'] == 'Under':
+                                odds["total"]["under"] = int(outcome['my_book'])
+                
+                transformed_game = {
+                    "id": game.get('id'),
+                    "homeTeam": game.get('home_team'),
+                    "awayTeam": game.get('away_team'),
+                    "startTime": game.get('commence_time'),
+                    "odds": odds,
+                    "isStarred": game.get('id') in starred_events
+                }
+                
+                transformed_games.append(transformed_game)
+            except Exception as e:
+                print(f"Error transforming game {game.get('id')}: {str(e)}")
+                continue
+        
+        return jsonify(transformed_games)
+    except Exception as e:
+        print(f"Error in events route: {str(e)}")
+        return jsonify([])
+
+# Add endpoint to star/unstar events
+@app.route('/events/<event_id>/star', methods=['POST'])
+def star_event(event_id):
+    """
+    Mark an event as starred/followed.
+    URL Parameters:
+        event_id (string): ID of the event to star
+    """
+    starred_events.add(event_id)
+    return jsonify({"success": True, "message": f"Event {event_id} starred", "isStarred": True})
+
+@app.route('/events/<event_id>/unstar', methods=['POST'])
+def unstar_event(event_id):
+    """
+    Remove star/follow status from an event.
+    URL Parameters:
+        event_id (string): ID of the event to unstar
+    """
+    if event_id in starred_events:
+        starred_events.remove(event_id)
+    return jsonify({"success": True, "message": f"Event {event_id} unstarred", "isStarred": False})
+
+# Initial run - will only fetch if no data exists
+retrieve_data(force=False)
 
 # Setup scheduler
 scheduler = BackgroundScheduler()
-scheduler.add_job(func=retrieve_data, trigger="interval", minutes=20)
+scheduler.add_job(func=lambda: retrieve_data(force=False), trigger="interval", minutes=60)
 scheduler.start()

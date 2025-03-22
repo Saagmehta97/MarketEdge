@@ -7,7 +7,7 @@ export default function Navigation() {
         <h1 className="text-2xl font-extrabold mb-8 text-white">MarketEdge</h1>
         
         <div className="space-y-4">
-          <Link to="/" className="block hover:text-olive-light transition-colors">
+          <Link to="/sports" className="block hover:text-olive-light transition-colors">
             Home
           </Link>
           <Link to="/sports" className="block hover:text-olive-light transition-colors">

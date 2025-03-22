@@ -1,8 +1,26 @@
 # Ignore Python cache files
 __pycache__/
 *.py[cod]
+*$py.class
+*.so
 # Ignore environment files
 .env
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
 
 # Ignore debug JSON files
 data/debug/*.json
@@ -12,3 +30,4 @@ data/debug/*.json
 *.sqlite3
 *.db
 venv 
+

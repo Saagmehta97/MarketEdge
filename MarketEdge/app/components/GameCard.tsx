@@ -1,21 +1,20 @@
 import { useState, useEffect } from 'react';
 
-// Updated interface to match the backend API response
-interface GameOdds {
-  moneyline: {
-    home: number;
-    away: number;
-  };
-  spread: {
-    home: number;
-    away: number;
-    points: number;
-  };
-  total: {
-    over: number;
-    under: number;
-    points: number;
-  };
+// Updated interface for detailed odds with bookmaker info
+interface OddsData {
+  name: string;
+  my_book: string;
+  pinnacle: string;
+  my_point?: string;
+  p_point?: string;
+  book_name: string;
+  pct_edge: number;
+  has_edge: boolean;
+}
+
+interface MarketData {
+  type: string;
+  data: OddsData[];
 }
 
 interface GameCardProps {
@@ -23,7 +22,7 @@ interface GameCardProps {
   homeTeam: string;
   awayTeam: string;
   startTime: string;
-  odds: GameOdds;
+  formatted_markets: MarketData[];
   isStarred?: boolean;
   onToggleFollow?: () => void;
 }
@@ -33,7 +32,7 @@ export default function GameCard({
   homeTeam, 
   awayTeam, 
   startTime, 
-  odds,
+  formatted_markets = [],
   isStarred = false,
   onToggleFollow 
 }: GameCardProps) {
@@ -51,6 +50,41 @@ export default function GameCard({
     // Call the parent handler if provided
     if (onToggleFollow) {
       onToggleFollow();
+    }
+  };
+
+  // Get logo path for a bookmaker
+  const getBookmakerLogo = (bookName: string) => {
+    const normalizedName = bookName.toLowerCase().replace(/\s+/g, '');
+    
+    switch (normalizedName) {
+      case 'draftkings':
+        return '/img/draftkings_logo.jpg';
+      case 'fanduel':
+        return '/img/fanduel_logo.jpg';
+      case 'pinnacle':
+        return '/img/pinnacle_logo.jpg';
+      case 'betmgm':
+        return '/img/betmgm_logo.jpg';
+      case 'espnbet':
+        return '/img/espnbet_logo.jpg';
+      case 'fliff':
+        return '/img/fliff_logo.jpg';
+      case 'williamhill':
+      case 'williamhillus':
+        return '/img/williamhill_us_logo.jpg';
+      default:
+        return '/img/betmgm_logo.jpg'; // Fallback to a known logo
+    }
+  };
+
+  // Helper to format the market type name
+  const getMarketName = (type: string) => {
+    switch (type) {
+      case 'h2h': return 'Moneyline';
+      case 'spreads': return 'Spreads';
+      case 'totals': return 'Totals';
+      default: return type;
     }
   };
 
@@ -73,104 +107,106 @@ export default function GameCard({
         </button>
       </div>
 
-      <div className="space-y-4">
-        {/* Check if odds exists */}
-        {odds ? (
-          <>
-            {/* Moneyline */}
-            {odds.moneyline && (
-              <div className="border-t border-gray-200 pt-3 first:border-t-0 first:pt-0">
-                <h4 className="text-sm font-bold uppercase text-gray-700 mb-2">Moneyline</h4>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded p-3 bg-gray-50">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="font-semibold">{homeTeam}</p>
-                        <div className="flex items-center space-x-2 text-sm">
-                          <span>{odds.moneyline.home}</span>
-                        </div>
+      {formatted_markets.length > 0 ? (
+        <div className="mt-4">
+          {/* All Market Types (Moneyline, Spreads, Totals) */}
+          {['h2h', 'spreads', 'totals'].map(marketType => {
+            const market = formatted_markets.find(m => m.type === marketType);
+            if (!market) return null;
+            
+            return (
+              <div key={marketType} className="grid grid-cols-7 gap-2 mb-4">
+                {/* Market Type Label (Left Side) */}
+                <div className="col-span-1 flex items-center font-medium">
+                  {getMarketName(marketType)}
+                </div>
+                
+                {/* Odds Data (Right Side) */}
+                <div className="col-span-6 grid grid-cols-2 gap-4">
+                  {/* Home Team/Over Row */}
+                  <div className="flex flex-col">
+                    <div className="font-medium mb-1">
+                      {marketType === 'totals' 
+                        ? `Over ${market.data[0]?.my_point}` 
+                        : `${market.data[0]?.name} ${market.data[0]?.my_point || ''}`}
+                    </div>
+                    <div className="grid grid-cols-3 gap-1">
+                      {/* Bookmaker odds */}
+                      <div className="flex items-center justify-center border rounded px-2 py-1">
+                        <span className="mr-1">{market.data[0]?.my_book}</span>
+                        <img
+                          src={getBookmakerLogo(market.data[0]?.book_name)}
+                          alt={market.data[0]?.book_name}
+                          className="w-5 h-5 object-contain"
+                        />
+                      </div>
+                      
+                      {/* Pinnacle odds */}
+                      <div className="flex items-center justify-center border rounded px-2 py-1">
+                        <span className="mr-1">{market.data[0]?.pinnacle}</span>
+                        <img
+                          src="/img/pinnacle_logo.jpg"
+                          alt="Pinnacle"
+                          className="w-5 h-5 object-contain"
+                        />
+                      </div>
+                      
+                      {/* Edge percentage */}
+                      <div className={`flex items-center justify-center rounded px-2 py-1 ${
+                        parseFloat(market.data[0]?.pct_edge.toString()) > 0 ? 'text-green-600' : 'text-gray-600'
+                      }`}>
+                        {market.data[0]?.pct_edge.toFixed(2)}
                       </div>
                     </div>
                   </div>
-                  <div className="rounded p-3 bg-gray-50">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="font-semibold">{awayTeam}</p>
-                        <div className="flex items-center space-x-2 text-sm">
-                          <span>{odds.moneyline.away}</span>
-                        </div>
+                  
+                  {/* Away Team/Under Row */}
+                  <div className="flex flex-col">
+                    <div className="font-medium mb-1">
+                      {marketType === 'totals' 
+                        ? `Under ${market.data[1]?.my_point}` 
+                        : `${market.data[1]?.name} ${market.data[1]?.my_point || ''}`}
+                    </div>
+                    <div className="grid grid-cols-3 gap-1">
+                      {/* Bookmaker odds */}
+                      <div className="flex items-center justify-center border rounded px-2 py-1">
+                        <span className="mr-1">{market.data[1]?.my_book}</span>
+                        <img
+                          src={getBookmakerLogo(market.data[1]?.book_name)}
+                          alt={market.data[1]?.book_name}
+                          className="w-5 h-5 object-contain"
+                        />
+                      </div>
+                      
+                      {/* Pinnacle odds */}
+                      <div className="flex items-center justify-center border rounded px-2 py-1">
+                        <span className="mr-1">{market.data[1]?.pinnacle}</span>
+                        <img
+                          src="/img/pinnacle_logo.jpg"
+                          alt="Pinnacle"
+                          className="w-5 h-5 object-contain"
+                        />
+                      </div>
+                      
+                      {/* Edge percentage */}
+                      <div className={`flex items-center justify-center rounded px-2 py-1 ${
+                        parseFloat(market.data[1]?.pct_edge.toString()) > 0 ? 'text-green-600' : 'text-gray-600'
+                      }`}>
+                        {market.data[1]?.pct_edge.toFixed(2)}
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-            )}
-
-            {/* Spread */}
-            {odds.spread && (
-              <div className="border-t border-gray-200 pt-3">
-                <h4 className="text-sm font-bold uppercase text-gray-700 mb-2">Spread</h4>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded p-3 bg-gray-50">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="font-semibold">{homeTeam} {odds.spread.points}</p>
-                        <div className="flex items-center space-x-2 text-sm">
-                          <span>{odds.spread.home}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="rounded p-3 bg-gray-50">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="font-semibold">{awayTeam} {-1 * odds.spread.points}</p>
-                        <div className="flex items-center space-x-2 text-sm">
-                          <span>{odds.spread.away}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Totals */}
-            {odds.total && (
-              <div className="border-t border-gray-200 pt-3">
-                <h4 className="text-sm font-bold uppercase text-gray-700 mb-2">Total</h4>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded p-3 bg-gray-50">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="font-semibold">Over {odds.total.points}</p>
-                        <div className="flex items-center space-x-2 text-sm">
-                          <span>{odds.total.over}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="rounded p-3 bg-gray-50">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="font-semibold">Under {odds.total.points}</p>
-                        <div className="flex items-center space-x-2 text-sm">
-                          <span>{odds.total.under}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </>
-        ) : (
-          <div className="text-center py-4 text-gray-500">
-            <p>No odds data available for this game</p>
-            <p className="text-xs mt-2">Check if the odds data is being correctly passed</p>
-          </div>
-        )}
-      </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="text-center py-4 text-gray-500">
+          <p>No odds data available for this game</p>
+          <p className="text-xs mt-2">Check if the formatted_markets property is correctly passed</p>
+        </div>
+      )}
     </div>
   );
 } 

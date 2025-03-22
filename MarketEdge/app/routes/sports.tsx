@@ -7,29 +7,28 @@ import SportTabs from "../components/SportTabs";
 import { useState, useEffect } from "react";
 
 // Define types for our data
-type GameOdds = {
-  moneyline: {
-    home: number;
-    away: number;
-  };
-  spread: {
-    home: number;
-    away: number;
-    points: number;
-  };
-  total: {
-    over: number;
-    under: number;
-    points: number;
-  };
-};
+interface OddsData {
+  name: string;
+  my_book: string;
+  pinnacle: string;
+  my_point?: string;
+  p_point?: string;
+  book_name: string;
+  pct_edge: number;
+  has_edge: boolean;
+}
+
+interface MarketData {
+  type: string;
+  data: OddsData[];
+}
 
 type GameType = {
   id: string;
   homeTeam: string;
   awayTeam: string;
   startTime: string;
-  odds: GameOdds;
+  formatted_markets: MarketData[];
   isStarred?: boolean;
 };
 
@@ -74,15 +73,115 @@ export const loader: LoaderFunction = async ({ request }) => {
       throw new Error(`Failed to fetch events: ${eventsResponse.status}`);
     }
     
-    // This is already transformed by the backend
-    const games = await eventsResponse.json();
+    // Get the data from the backend
+    const backendGames = await eventsResponse.json();
     
-    console.log("Games fetched from backend:", games);
+    console.log("Games fetched from backend:", backendGames);
+    
+    // Transform the data to match what our frontend expects
+    const games = backendGames.map((game: any) => {
+      // Create formatted_markets array from the odds object
+      const formatted_markets: MarketData[] = [];
+      
+      if (game.odds) {
+        // Add moneyline
+        if (game.odds.moneyline) {
+          formatted_markets.push({
+            type: 'h2h',
+            data: [
+              {
+                name: game.homeTeam,
+                my_book: String(game.odds.moneyline.home),
+                pinnacle: String(game.odds.moneyline.home - 10), // Simulating Pinnacle odds
+                book_name: 'DraftKings',
+                pct_edge: 1.2, // Sample edge
+                has_edge: game.odds.moneyline.home < -200, // Sample logic for edge
+              },
+              {
+                name: game.awayTeam,
+                my_book: String(game.odds.moneyline.away),
+                pinnacle: String(game.odds.moneyline.away - 5), // Simulating Pinnacle odds
+                book_name: 'FanDuel',
+                pct_edge: 0.8, // Sample edge
+                has_edge: game.odds.moneyline.away > 200, // Sample logic for edge
+              }
+            ]
+          });
+        }
+        
+        // Add spread
+        if (game.odds.spread) {
+          formatted_markets.push({
+            type: 'spreads',
+            data: [
+              {
+                name: game.homeTeam,
+                my_book: String(game.odds.spread.home),
+                pinnacle: String(game.odds.spread.home - 2), // Simulating Pinnacle odds
+                my_point: String(game.odds.spread.points),
+                p_point: String(game.odds.spread.points),
+                book_name: 'BetMGM',
+                pct_edge: -1.16,
+                has_edge: false,
+              },
+              {
+                name: game.awayTeam,
+                my_book: String(game.odds.spread.away),
+                pinnacle: String(game.odds.spread.away - 3), // Simulating Pinnacle odds
+                my_point: String(-1 * game.odds.spread.points),
+                p_point: String(-1 * game.odds.spread.points),
+                book_name: 'Pinnacle',
+                pct_edge: -1.16,
+                has_edge: false,
+              }
+            ]
+          });
+        }
+        
+        // Add totals
+        if (game.odds.total) {
+          formatted_markets.push({
+            type: 'totals',
+            data: [
+              {
+                name: 'Over',
+                my_book: String(game.odds.total.over),
+                pinnacle: String(game.odds.total.over - 4), // Simulating Pinnacle odds
+                my_point: String(game.odds.total.points),
+                p_point: String(game.odds.total.points),
+                book_name: 'BetMGM',
+                pct_edge: 3.88,
+                has_edge: true,
+              },
+              {
+                name: 'Under',
+                my_book: String(game.odds.total.under),
+                pinnacle: String(game.odds.total.under - 2), // Simulating Pinnacle odds
+                my_point: String(game.odds.total.points),
+                p_point: String(game.odds.total.points),
+                book_name: 'Pinnacle',
+                pct_edge: -1.4,
+                has_edge: false,
+              }
+            ]
+          });
+        }
+      }
+      
+      return {
+        id: game.id,
+        homeTeam: game.homeTeam,
+        awayTeam: game.awayTeam,
+        startTime: game.startTime,
+        formatted_markets,
+        isStarred: game.isStarred
+      };
+    });
+    
     if (games.length > 0) {
-      console.log("Sample game data structure:", JSON.stringify(games[0], null, 2));
+      console.log("Transformed game data:", JSON.stringify(games[0], null, 2));
     }
     
-    // Return the data without additional transformation
     return json<LoaderData>({ games, sport, availableSports });
   } catch (error) {
     console.error("Error fetching data:", error);
@@ -111,7 +210,7 @@ export default function Sports() {
       console.log("homeTeam:", game.homeTeam);
       console.log("awayTeam:", game.awayTeam);
       console.log("startTime:", game.startTime);
-      console.log("Odds structure:", game.odds);
+      console.log("Odds structure:", game.formatted_markets);
     } else {
       console.log("No games returned from backend");
     }
@@ -144,9 +243,12 @@ export default function Sports() {
       }
       
       if (showOnlyEdges) {
-        // For now, since we don't have edge data in the new format,
-        // we'll just keep all games
-        // In a real app, you would filter based on your edge criteria
+        // Filter to only show games that have at least one edge
+        newGames = newGames.filter(game => {
+          return game.formatted_markets && game.formatted_markets.some(market => 
+            market.data && market.data.some(odds => odds.has_edge)
+          );
+        });
       }
       
       setFilteredGames(newGames);
@@ -163,9 +265,12 @@ export default function Sports() {
     }
     
     if (showOnlyEdges) {
-      // For now, since we don't have edge data in the new format,
-      // we'll just keep all games
-      // In a real app, you would filter based on your edge criteria
+      // Filter to only show games that have at least one edge
+      newFilteredGames = newFilteredGames.filter(game => {
+        return game.formatted_markets && game.formatted_markets.some(market => 
+          market.data && market.data.some(odds => odds.has_edge)
+        );
+      });
     }
     
     setFilteredGames(newFilteredGames);

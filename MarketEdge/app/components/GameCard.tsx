@@ -87,6 +87,16 @@ export default function GameCard({
       default: return type;
     }
   };
+    // Helper to format edge percentage with + for positive numbers
+  const formatEdge = (pctEdge: number) => {
+    return pctEdge > 0 ? `+${pctEdge.toFixed(2)}` : pctEdge.toFixed(2);
+  };
+  
+  // Helper to format odds value with + for positive numbers
+  const formatOdds = (odds: string | number) => {
+    const oddsNum = parseInt(odds?.toString() || '0', 10);
+    return oddsNum > 0 ? `+${oddsNum}` : `${oddsNum}`;
+  };
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6 mb-4 border-l-4 border-olive">
@@ -122,77 +132,117 @@ export default function GameCard({
                 </div>
                 
                 {/* Odds Data (Right Side) */}
-                <div className="col-span-6 grid grid-cols-2 gap-4">
-                  {/* Home Team/Over Row */}
-                  <div className="flex flex-col">
-                    <div className="font-medium mb-1">
-                      {marketType === 'totals' 
-                        ? `Over ${market.data[0]?.my_point}` 
-                        : `${market.data[0]?.name} ${market.data[0]?.my_point || ''}`}
+                <div className="col-span-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Home Team/Over Side */}
+                    <div>
+                      <div className="grid grid-cols-3 gap-1">
+                        {/* Team/Option Name centered only over first two columns */}
+                        <div className="col-span-2 mb-2">
+                          <div className="font-medium text-center">
+                            {marketType === 'totals' 
+                              ? `Over ${market.data[0]?.my_point}` 
+                              : `${market.data[0]?.name} ${market.data[0]?.my_point || ''}`}
+                          </div>
+                        </div>
+                        
+                        {/* Edge Label - only show for the first market type (moneyline) */}
+                        <div className="text-center text-xs text-gray-600 mb-2">
+                          {marketType === 'h2h' ? 'Edge %' : ''}
+                        </div>
+                      </div>
+                      
+                      {/* Column Headers */}
+                      <div className="grid grid-cols-3 gap-1 mb-1">
+                        <div className="text-center text-xs text-gray-600">{market.data[0]?.book_name || 'Book'}</div>
+                        <div className="text-center text-xs text-gray-600">Pinnacle</div>
+                        <div className="text-center text-xs text-gray-600"></div>
+                      </div>
+                      
+                      {/* Odds Values */}
+                      <div className="grid grid-cols-3 gap-1">
+                        {/* Bookmaker odds */}
+                        <div className="flex items-center justify-center border rounded px-2 py-1">
+                          <span className="mr-1">{formatOdds(market.data[0]?.my_book)}</span>
+                          <img
+                            src={getBookmakerLogo(market.data[0]?.book_name)}
+                            alt={market.data[0]?.book_name}
+                            className="w-5 h-5 object-contain"
+                          />
+                        </div>
+                        
+                        {/* Pinnacle odds */}
+                        <div className="flex items-center justify-center border rounded px-2 py-1">
+                          <span className="mr-1">{formatOdds(market.data[0]?.pinnacle)}</span>
+                          <img
+                            src="/img/pinnacle_logo.jpg"
+                            alt="Pinnacle"
+                            className="w-5 h-5 object-contain"
+                          />
+                        </div>
+                        
+                        {/* Edge percentage */}
+                        <div className={`flex items-center justify-center rounded px-2 py-1 ${
+                          parseFloat(market.data[0]?.pct_edge.toString()) > 0 ? 'text-green-600' : 'text-gray-600'
+                        }`}>
+                          {formatEdge(market.data[0]?.pct_edge)}
+                        </div>
+                      </div>
                     </div>
-                    <div className="grid grid-cols-3 gap-1">
-                      {/* Bookmaker odds */}
-                      <div className="flex items-center justify-center border rounded px-2 py-1">
-                        <span className="mr-1">{market.data[0]?.my_book}</span>
-                        <img
-                          src={getBookmakerLogo(market.data[0]?.book_name)}
-                          alt={market.data[0]?.book_name}
-                          className="w-5 h-5 object-contain"
-                        />
+                    
+                    {/* Away Team/Under Side */}
+                    <div>
+                      <div className="grid grid-cols-3 gap-1">
+                        {/* Team/Option Name centered only over first two columns */}
+                        <div className="col-span-2 mb-2">
+                          <div className="font-medium text-center">
+                            {marketType === 'totals' 
+                              ? `Under ${market.data[1]?.my_point}` 
+                              : `${market.data[1]?.name} ${market.data[1]?.my_point || ''}`}
+                          </div>
+                        </div>
+                        
+                        {/* Edge Label - only show for the first market type (moneyline) */}
+                        <div className="text-center text-xs text-gray-600 mb-2">
+                          {marketType === 'h2h' ? 'Edge %' : ''}
+                        </div>
                       </div>
                       
-                      {/* Pinnacle odds */}
-                      <div className="flex items-center justify-center border rounded px-2 py-1">
-                        <span className="mr-1">{market.data[0]?.pinnacle}</span>
-                        <img
-                          src="/img/pinnacle_logo.jpg"
-                          alt="Pinnacle"
-                          className="w-5 h-5 object-contain"
-                        />
+                      {/* Column Headers */}
+                      <div className="grid grid-cols-3 gap-1 mb-1">
+                        <div className="text-center text-xs text-gray-600">{market.data[1]?.book_name || 'Book'}</div>
+                        <div className="text-center text-xs text-gray-600">Pinnacle</div>
+                        <div className="text-center text-xs text-gray-600"></div>
                       </div>
                       
-                      {/* Edge percentage */}
-                      <div className={`flex items-center justify-center rounded px-2 py-1 ${
-                        parseFloat(market.data[0]?.pct_edge.toString()) > 0 ? 'text-green-600' : 'text-gray-600'
-                      }`}>
-                        {market.data[0]?.pct_edge.toFixed(2)}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Away Team/Under Row */}
-                  <div className="flex flex-col">
-                    <div className="font-medium mb-1">
-                      {marketType === 'totals' 
-                        ? `Under ${market.data[1]?.my_point}` 
-                        : `${market.data[1]?.name} ${market.data[1]?.my_point || ''}`}
-                    </div>
-                    <div className="grid grid-cols-3 gap-1">
-                      {/* Bookmaker odds */}
-                      <div className="flex items-center justify-center border rounded px-2 py-1">
-                        <span className="mr-1">{market.data[1]?.my_book}</span>
-                        <img
-                          src={getBookmakerLogo(market.data[1]?.book_name)}
-                          alt={market.data[1]?.book_name}
-                          className="w-5 h-5 object-contain"
-                        />
-                      </div>
-                      
-                      {/* Pinnacle odds */}
-                      <div className="flex items-center justify-center border rounded px-2 py-1">
-                        <span className="mr-1">{market.data[1]?.pinnacle}</span>
-                        <img
-                          src="/img/pinnacle_logo.jpg"
-                          alt="Pinnacle"
-                          className="w-5 h-5 object-contain"
-                        />
-                      </div>
-                      
-                      {/* Edge percentage */}
-                      <div className={`flex items-center justify-center rounded px-2 py-1 ${
-                        parseFloat(market.data[1]?.pct_edge.toString()) > 0 ? 'text-green-600' : 'text-gray-600'
-                      }`}>
-                        {market.data[1]?.pct_edge.toFixed(2)}
+                      {/* Odds Values */}
+                      <div className="grid grid-cols-3 gap-1">
+                        {/* Bookmaker odds */}
+                        <div className="flex items-center justify-center border rounded px-2 py-1">
+                          <span className="mr-1">{formatOdds(market.data[1]?.my_book)}</span>
+                          <img
+                            src={getBookmakerLogo(market.data[1]?.book_name)}
+                            alt={market.data[1]?.book_name}
+                            className="w-5 h-5 object-contain"
+                          />
+                        </div>
+                        
+                        {/* Pinnacle odds */}
+                        <div className="flex items-center justify-center border rounded px-2 py-1">
+                          <span className="mr-1">{formatOdds(market.data[1]?.pinnacle)}</span>
+                          <img
+                            src="/img/pinnacle_logo.jpg"
+                            alt="Pinnacle"
+                            className="w-5 h-5 object-contain"
+                          />
+                        </div>
+                        
+                        {/* Edge percentage */}
+                        <div className={`flex items-center justify-center rounded px-2 py-1 ${
+                          parseFloat(market.data[1]?.pct_edge.toString()) > 0 ? 'text-green-600' : 'text-gray-600'
+                        }`}>
+                          {formatEdge(market.data[1]?.pct_edge)}
+                        </div>
                       </div>
                     </div>
                   </div>

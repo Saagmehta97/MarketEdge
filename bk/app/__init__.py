@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify
 from apscheduler.schedulers.background import BackgroundScheduler
 from scripts.get_data import fetch_odds,process_games 
 from scripts.dbactions import process_db
+from app.sport import get_sports
 import json 
 from datetime import datetime
 
@@ -58,7 +59,7 @@ def retrieve_data():
     
 @app.route('/')
 def home():
-    sport_key = request.args.get('sport', 'baseball_mlb')
+    sport_key = request.args.get('sport', 'basketball_nba')
     
     try:
         # Load processed games from the file
@@ -81,8 +82,15 @@ def home():
         print(f"Error in home route: {str(e)}")
         return render_template('error.html', message="Failed to load game data.")
 
+@app.route('/sports')
+def sports():
+    sports = get_sports()
+    return list(sports)
+    # try:
+    #     with open('data/processed_games.json', 'r')
+ 
 #Initial run
-retrieve_data()
+# retrieve_data()
 
 # Setup scheduler
 scheduler = BackgroundScheduler()

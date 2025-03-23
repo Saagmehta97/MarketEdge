@@ -6,8 +6,6 @@ import GameCard from "~/components/GameCard";
 import SportTabs from "../components/SportTabs";
 import { useState, useEffect } from "react";
 
-// Helper to check if we're in the browser environment
-const isBrowser = typeof window !== 'undefined';
 
 // Define types for our data
 interface OddsData {
@@ -32,7 +30,7 @@ export type GameType = {
   awayTeam: string;
   startTime: string;
   formatted_markets: MarketData[];
-  isStarred?: boolean;
+  isFollowed?: boolean;
 };
 
 type LoaderData = {
@@ -47,9 +45,34 @@ const API_CONFIG = {
   baseUrl: import.meta.env.VITE_API_BASE_URL || "http://localhost:5001",
   endpoints: {
     sports: "/sports",
-    events: "/events"
+    events: "/events",
+    follow: "/follow"
   }
 };
+
+export async function action({ request }: { request: Request }) {
+  const formData = await request.formData();
+  const eventId = formData.get("eventId");
+  const follow = formData.get("follow") === "true";
+
+  try {
+    const formResponse = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.events}/${eventId}${API_CONFIG.endpoints.follow}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ follow }),
+    });
+    if (!formResponse.ok) {
+      throw new Error(`Failed to fetch form data: ${formResponse.status}`);
+    }
+
+
+    console.log(formResponse)
+    return true
+  }
+  catch (error) {
+    console.error("Error fetching data:", error);
+  }
+}
 
 // Loader function to fetch data server-side
 export const loader: LoaderFunction = async ({ request }) => {
@@ -177,7 +200,7 @@ export const loader: LoaderFunction = async ({ request }) => {
         awayTeam: game.awayTeam,
         startTime: game.startTime,
         formatted_markets,
-        isStarred: game.isStarred
+        isFollowed: game.isFollowed
       };
     });
     
@@ -281,14 +304,14 @@ export default function Sports() {
     }
     
     // Get the current state and toggle it
-    const currentStarred = !!gameToToggle.isStarred;
+    const currentStarred = !!gameToToggle.isFollowed;
     const newStarred = !currentStarred;
     
-    // Update the isStarred property in our filteredGames state
+    // Update the isFollowed property in our filteredGames state
     setFilteredGames(prev => {
       const updated = prev.map(game => 
         game.id === gameId 
-          ? { ...game, isStarred: newStarred } 
+          ? { ...game, isFollowed: newStarred } 
           : game
       );
       return updated;
@@ -349,7 +372,7 @@ export default function Sports() {
               awayTeam={game.awayTeam}
               startTime={game.startTime}
               formatted_markets={game.formatted_markets}
-              isStarred={!!game.isStarred}
+              isFollowed={!!game.isFollowed}
               onToggleFollow={() => handleToggleFollow(game.id)}
             />
           ))

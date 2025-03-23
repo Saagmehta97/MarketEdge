@@ -127,6 +127,7 @@ def events():
     """
     sport_key = request.args.get('sport', 'all')
     starred_param = request.args.get('starred', 'false').lower() == 'true'
+    print(f"starred_events: {starred_events}")
     
     try:
         # Load processed games from the file
@@ -196,7 +197,7 @@ def events():
                     "awayTeam": game.get('away_team'),
                     "startTime": game.get('commence_time'),
                     "odds": odds,
-                    "isStarred": game.get('id') in starred_events
+                    "isFollowed": game.get('id') in starred_events
                 }
                 
                 transformed_games.append(transformed_game)
@@ -210,26 +211,28 @@ def events():
         return jsonify([])
 
 # Add endpoint to star/unstar events
-@app.route('/events/<event_id>/star', methods=['POST'])
+@app.route('/events/<event_id>/follow', methods=['POST'])
 def star_event(event_id):
     """
     Mark an event as starred/followed.
     URL Parameters:
         event_id (string): ID of the event to star
     """
-    starred_events.add(event_id)
-    return jsonify({"success": True, "message": f"Event {event_id} starred", "isStarred": True})
+    data = request.get_json()
+    update_Follow = data.get('follow')
+    print(f"update_Follow: {update_Follow}")
 
-@app.route('/events/<event_id>/unstar', methods=['POST'])
-def unstar_event(event_id):
-    """
-    Remove star/follow status from an event.
-    URL Parameters:
-        event_id (string): ID of the event to unstar
-    """
-    if event_id in starred_events:
-        starred_events.remove(event_id)
-    return jsonify({"success": True, "message": f"Event {event_id} unstarred", "isStarred": False})
+    if update_Follow:
+        starred_events.add(event_id)
+    else:
+        if event_id in starred_events:
+            starred_events.remove(event_id)
+
+    print(f"starred_events: {starred_events}")
+
+    
+    return jsonify({"success": True, "message": f"Event {event_id} updated", "isFollowed": update_Follow})
+
 
 # Initial run - will only fetch if no data exists
 retrieve_data(force=False)

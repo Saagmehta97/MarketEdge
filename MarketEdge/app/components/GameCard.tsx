@@ -1,5 +1,8 @@
+import { useFetcher } from '@remix-run/react';
 import { useState, useEffect } from 'react';
 import React from 'react';
+import { isFileLoadingAllowed } from 'vite';
+
 
 // Updated interface for detailed odds with bookmaker info
 interface OddsData {
@@ -24,7 +27,7 @@ interface GameCardProps {
   awayTeam: string;
   startTime: string;
   formatted_markets: MarketData[];
-  isStarred?: boolean;
+  isFollowed?: boolean;
   onToggleFollow?: () => void;
 }
 
@@ -34,30 +37,16 @@ export default function GameCard({
   awayTeam, 
   startTime, 
   formatted_markets = [],
-  isStarred = false,
+  isFollowed = false,
   onToggleFollow 
 }: GameCardProps) {
   // Start with the prop value
-  const [isFollowed, setIsFollowed] = useState(isStarred);
-  
-  // Sync with isStarred prop changes
-  useEffect(() => {
-    if (isStarred !== isFollowed) {
-      setIsFollowed(isStarred);
-    }
-  }, [isStarred, isFollowed]);
-  
-  // Handle button click
-  function handleFollowClick() {
-    // Toggle the followed state
-    const newState = !isFollowed;
-    setIsFollowed(newState);
-    
-    // Call parent handler if provided
-    if (onToggleFollow) {
-      onToggleFollow();
-    }
-  }
+  const fetcher = useFetcher();
+  const formFollow = fetcher.formData?.get("follow");
+  const optimisticFollow = formFollow === "true";
+  const currentlyFollowing = formFollow ?? isFollowed;
+
+
 
   // Get logo path for a bookmaker
   const getBookmakerLogo = (bookName: string) => {
@@ -105,6 +94,12 @@ export default function GameCard({
     return oddsNum > 0 ? `+${oddsNum}` : `${oddsNum}`;
   };
 
+  // if (isFileLoadingAllowed) {
+  //   console.log('currentlyFollowing', currentlyFollowing);
+  //   console.log('isFollowed', isFollowed);
+  //   console.log('formFollow', formFollow);
+  //   console.log('optimisticFollow', optimisticFollow);
+  // }
   return (
     <div className="bg-white rounded-lg shadow-md p-6 mb-4 border-l-4 border-olive">
       <div className="flex justify-between items-start mb-4">
@@ -112,18 +107,21 @@ export default function GameCard({
           <h3 className="text-xl font-bold">{awayTeam} @ {homeTeam}</h3>
           <p className="text-gray-600">Start Time: {startTime}</p>
         </div>
-        <button 
-          id={`follow-button-${id}`}
-          onClick={handleFollowClick}
-          className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors ${
-            isFollowed 
-              ? 'bg-olive text-white' 
-              : 'border-2 border-olive text-olive hover:bg-olive hover:text-white'
-          }`}
-          data-id={id}
-        >
-          {isFollowed ? 'Following' : 'Follow'}
-        </button>
+        <fetcher.Form method="post">
+          <input type="hidden" name="eventId" value={id}/>
+          <input type="hidden" name="follow" value={(!currentlyFollowing).toString()}/>
+          <button 
+            id={`follow-button-${id}`}
+            className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors ${
+              currentlyFollowing 
+                ? 'bg-olive text-white' 
+                : 'border-2 border-olive text-olive hover:bg-olive hover:text-white'
+            }`}
+            data-id={id}
+          >
+            {currentlyFollowing ? 'Following' : 'Follow'}            
+          </button>
+        </fetcher.Form>
       </div>
 
       {formatted_markets.length > 0 ? (

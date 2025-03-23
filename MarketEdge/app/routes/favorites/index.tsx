@@ -80,7 +80,7 @@ export default function FavoritesIndex() {
                 awayTeam={game.awayTeam}
                 startTime={game.startTime}
                 formatted_markets={game.formatted_markets || []}
-                isStarred={true}
+                isFollowed={true}
                 onToggleFollow={() => handleToggleFollow(game.id)}
               />
             )

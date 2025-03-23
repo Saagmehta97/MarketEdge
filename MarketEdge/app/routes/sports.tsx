@@ -6,6 +6,9 @@ import GameCard from "~/components/GameCard";
 import SportTabs from "../components/SportTabs";
 import { useState, useEffect } from "react";
 
+// Helper to check if we're in the browser environment
+const isBrowser = typeof window !== 'undefined';
+
 // Define types for our data
 interface OddsData {
   name: string;
@@ -18,12 +21,12 @@ interface OddsData {
   has_edge: boolean;
 }
 
-interface MarketData {
+export interface MarketData {
   type: string;
   data: OddsData[];
 }
 
-type GameType = {
+export type GameType = {
   id: string;
   homeTeam: string;
   awayTeam: string;
@@ -192,28 +195,18 @@ export const loader: LoaderFunction = async ({ request }) => {
 
 export default function Sports() {
   const { games, sport, availableSports } = useLoaderData<LoaderData>();
+  const [searchParams] = useSearchParams();
+  const fetcher = useFetcher<LoaderData>();
+
+  // State for UI filters and game display
+  const [filteredGames, setFilteredGames] = useState<GameType[]>(games);
   const [isLiveOnly, setIsLiveOnly] = useState(false);
   const [showOnlyEdges, setShowOnlyEdges] = useState(true);
-  const [filteredGames, setFilteredGames] = useState<GameType[]>(games);
   const [isAutoRefresh, setIsAutoRefresh] = useState(false);
-  const fetcher = useFetcher<LoaderData>();
   
-  // Log the game data structure to debug
+  // Initialize filteredGames with games from the loader
   useEffect(() => {
-    console.log("Games from backend:", games);
-    if (games.length > 0) {
-      console.log("First game structure:", JSON.stringify(games[0], null, 2));
-      // Check structure of the first game to debug
-      const game = games[0];
-      console.log("Game properties:");
-      console.log("id:", game.id);
-      console.log("homeTeam:", game.homeTeam);
-      console.log("awayTeam:", game.awayTeam);
-      console.log("startTime:", game.startTime);
-      console.log("Odds structure:", game.formatted_markets);
-    } else {
-      console.log("No games returned from backend");
-    }
+    setFilteredGames(games);
   }, [games]);
   
   // Auto-refresh data every 30 seconds when enabled
@@ -235,18 +228,19 @@ export default function Sports() {
   // Update games when fetcher returns new data
   useEffect(() => {
     if (fetcher.data?.games) {
-      let newGames = fetcher.data.games;
+      let newGames = fetcher.data.games as GameType[];
       
+      // Apply filters
       if (isLiveOnly) {
         // In a real app, you would filter based on an isLive property
-        newGames = newGames.filter((_game, index) => index % 2 === 0);
+        newGames = newGames.filter((_game: GameType, index: number) => index % 2 === 0);
       }
       
       if (showOnlyEdges) {
         // Filter to only show games that have at least one edge
-        newGames = newGames.filter(game => {
-          return game.formatted_markets && game.formatted_markets.some(market => 
-            market.data && market.data.some(odds => odds.has_edge)
+        newGames = newGames.filter((game: GameType) => {
+          return game.formatted_markets && game.formatted_markets.some((market: MarketData) => 
+            market.data && market.data.some((odds: OddsData) => odds.has_edge)
           );
         });
       }
@@ -257,8 +251,10 @@ export default function Sports() {
   
   // Filter games when filters change or games change
   useEffect(() => {
+    // Start with games
     let newFilteredGames = [...games];
     
+    // Apply filters
     if (isLiveOnly) {
       // In a real app, you would filter based on an isLive property
       newFilteredGames = newFilteredGames.filter((_game, index) => index % 2 === 0);
@@ -277,32 +273,26 @@ export default function Sports() {
   }, [games, isLiveOnly, showOnlyEdges]);
   
   // Handle starring/following an event
-  const handleToggleFollow = async (gameId: string, isCurrentlyStarred: boolean) => {
-    try {
-      const endpoint = isCurrentlyStarred ? 'unstar' : 'star';
-      const response = await fetch(`${API_CONFIG.baseUrl}/events/${gameId}/${endpoint}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to ${endpoint} event: ${response.status}`);
-      }
-      
-      // Update the local state to reflect the change
-      setFilteredGames(prev => 
-        prev.map(game => 
-          game.id === gameId 
-            ? { ...game, isStarred: !isCurrentlyStarred } 
-            : game
-        )
-      );
-      
-    } catch (error) {
-      console.error(`Error toggling follow status for game ${gameId}:`, error);
+  const handleToggleFollow = (gameId: string) => {
+    // Find the game
+    const gameToToggle = filteredGames.find(game => game.id === gameId);
+    if (!gameToToggle) {
+      return;
     }
+    
+    // Get the current state and toggle it
+    const currentStarred = !!gameToToggle.isStarred;
+    const newStarred = !currentStarred;
+    
+    // Update the isStarred property in our filteredGames state
+    setFilteredGames(prev => {
+      const updated = prev.map(game => 
+        game.id === gameId 
+          ? { ...game, isStarred: newStarred } 
+          : game
+      );
+      return updated;
+    });
   };
   
   return (
@@ -351,11 +341,16 @@ export default function Sports() {
 
       <div className="space-y-4">
         {filteredGames.length > 0 ? (
-          filteredGames.map((game, index) => (
+          filteredGames.map((game) => (
             <GameCard 
-              key={index} 
-              {...game} 
-              onToggleFollow={() => handleToggleFollow(game.id, Boolean(game.isStarred))}
+              key={`game-${game.id}`} 
+              id={game.id}
+              homeTeam={game.homeTeam}
+              awayTeam={game.awayTeam}
+              startTime={game.startTime}
+              formatted_markets={game.formatted_markets}
+              isStarred={!!game.isStarred}
+              onToggleFollow={() => handleToggleFollow(game.id)}
             />
           ))
         ) : (

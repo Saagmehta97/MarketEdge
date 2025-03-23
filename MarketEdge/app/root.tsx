@@ -8,11 +8,11 @@ import {
 } from "@remix-run/react";
 import type { LinksFunction } from "@remix-run/node";
 
-import styles from "./tailwind.css";
+import tailwindStyles from "./tailwind.css?url";
 import Navigation from "./components/Navigation";
 
 export const links: LinksFunction = () => [
-  { rel: "stylesheet", href: styles },
+  { rel: "stylesheet", href: tailwindStyles },
 ];
 
 export default function App() {
@@ -27,7 +27,7 @@ export default function App() {
       <body className="bg-gray-100">
         <div className="flex min-h-screen">
           <Navigation />
-          <main className="flex-1 p-8">
+          <main className="flex-1 p-8 ml-64">
             <Outlet />
           </main>
         </div>

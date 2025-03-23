@@ -163,7 +163,7 @@ export default function Sports() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-olive mb-4">Sports Betting Odds</h1>
+        <h1 className="text-3xl font-bold text-olive mb-4">MarketEdge</h1>
         
         <div className="flex items-center space-x-6 mb-4">
           <label className="flex items-center space-x-2">

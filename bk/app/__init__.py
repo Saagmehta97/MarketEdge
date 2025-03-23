@@ -111,6 +111,29 @@ def home():
         print(f"Error in home route: {str(e)}")
         return render_template('error.html', message="Failed to load game data.")
 
+
+@app.route('/signup', methods=['POST'])
+def signup():
+    data = request.get_json()
+    print(f"data: {data}")
+    response = supabase.auth.sign_up({
+        "email": data['email'],
+        "password": data['password']
+    })
+    print(f"response: {response}")
+    return jsonify({"success": True, "message": "User created"})
+
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    print(f"data: {data}")
+    response = supabase.auth.sign_in_with_password({
+        "email": data['email'],
+        "password": data['password'],
+    })
+    print(f"response: {response}")
+    return jsonify({"success": True, "message": "User logged in"})
+
 @app.route('/sports')
 def sports():
     """

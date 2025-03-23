@@ -6,11 +6,22 @@ from app.sport import get_sports
 import json 
 from datetime import datetime
 from supabase import create_client, Client
+
+from flask_jwt_extended import create_access_token
+from flask_jwt_extended import get_jwt_identity
+from flask_jwt_extended import jwt_required
+from flask_jwt_extended import JWTManager
+
 # from db.user import get_user
 
 import os
 
 app = Flask(__name__)
+
+app.config["JWT_SECRET_KEY"] = "super-secret"
+jwt = JWTManager(app)
+
+
 
 # Initialize Supabase client
 supabase: Client = create_client(
@@ -121,7 +132,7 @@ def signup():
         "password": data['password']
     })
     print(f"response: {response}")
-    return jsonify({"success": True, "message": "User created"})
+    return jsonify({"success": True, "message": "User created", "access_token": access_token})
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -132,7 +143,9 @@ def login():
         "password": data['password'],
     })
     print(f"response: {response}")
-    return jsonify({"success": True, "message": "User logged in"})
+    access_token = create_access_token(identity=response.user.id)
+    print(f"response2: {response}")
+    return jsonify({"success": True, "message": "User logged in", "access_token": access_token})
 
 @app.route('/sports')
 def sports():
@@ -145,6 +158,10 @@ def sports():
     # Create a more frontend-friendly mapping for display
     return jsonify(sports_list)
 
+def get_user():
+    access_token = '934e98dc-8897-4007-9aee-b29eaceab1a8'
+    return access_token
+
 @app.route('/events')
 def events():
     """
@@ -155,7 +172,8 @@ def events():
     Returns:
         Array<EventObject>: List of events matching the criteria
     """
-    all_events = find_all_events(1)
+    user_id = get_user()
+    all_events = find_all_events(user_id)
     print("all_events: ", all_events )
     starred_events = [event['event_id'] for event in all_events.data]
     print("starred_events: ", starred_events)
@@ -253,16 +271,17 @@ def star_event(event_id):
     URL Parameters:
         event_id (string): ID of the event to star
     """
+    user_id = get_user()
     data = request.get_json()
     update_Follow = data.get('follow')
     print(f"update_Follow: {update_Follow}")
     
     if update_Follow:
-        if not find_event(event_id, 1):
-            update_follow_event(event_id, 1)
+        if not find_event(event_id, user_id):
+            update_follow_event(event_id, user_id)
     else:
-        if find_event(event_id, 1):
-            unfollow_event(event_id, 1)
+        if find_event(event_id, user_id):
+            unfollow_event(event_id, user_id)
 
     # if update_Follow:
     #     starred_events.add(event_id)

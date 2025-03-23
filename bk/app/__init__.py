@@ -11,6 +11,7 @@ from flask_jwt_extended import create_access_token
 from flask_jwt_extended import get_jwt_identity
 from flask_jwt_extended import jwt_required
 from flask_jwt_extended import JWTManager
+from flask_jwt_extended import verify_jwt_in_request
 
 # from db.user import get_user
 
@@ -172,11 +173,18 @@ def events():
     Returns:
         Array<EventObject>: List of events matching the criteria
     """
-    user_id = get_user()
-    all_events = find_all_events(user_id)
-    print("all_events: ", all_events )
-    starred_events = [event['event_id'] for event in all_events.data]
-    print("starred_events: ", starred_events)
+    verify_jwt_in_request(optional=True)
+    user_id = None
+    print("user_id: ", user_id)
+    # user_id = get_user()
+    if user_id:
+        all_events = find_all_events(user_id)
+        print("all_events: ", all_events )
+        starred_events = [event['event_id'] for event in all_events.data]
+        print("starred_events: ", starred_events)
+    else:
+        starred_events = []
+
     sport_key = request.args.get('sport', 'all')
     followed_param = request.args.get('followed', 'false').lower() == 'true'
     print("followed_param: ", followed_param)
@@ -265,13 +273,15 @@ def events():
 
 # Add endpoint to star/unstar events
 @app.route('/events/<event_id>/follow', methods=['POST'])
+@jwt_required()
 def star_event(event_id):
     """
     Mark an event as starred/followed.
     URL Parameters:
         event_id (string): ID of the event to star
     """
-    user_id = get_user()
+    
+    user_id = get_jwt_identity()
     data = request.get_json()
     update_Follow = data.get('follow')
     print(f"update_Follow: {update_Follow}")

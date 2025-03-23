@@ -1,5 +1,5 @@
 import { Link } from "@remix-run/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function Navigation() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -18,6 +18,14 @@ export default function Navigation() {
   const [signupError, setSignupError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  
+  // Check if user is already logged in on component mount
+  useEffect(() => {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      setIsLoggedIn(true);
+    }
+  }, []);
   
   const openLoginModal = () => {
     setLoginError("");
@@ -43,6 +51,43 @@ export default function Navigation() {
     setSignupEmail("");
     setSignupPassword("");
     setConfirmPassword("");
+  };
+
+  const handleLogout = async () => {
+    try {
+      // Clear localStorage
+      localStorage.removeItem('access_token');
+      
+      // Clear cookies
+      document.cookie = "access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      
+      // Update state
+      setIsLoggedIn(false);
+      
+      // Optional: Call logout endpoint on the server if you need to invalidate tokens server-side
+      try {
+        await fetch('http://localhost:5001/logout', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+          },
+        });
+      } catch (error) {
+        // Silent fail on server logout - user is already logged out client-side
+        console.log("Server logout failed, but user was logged out client-side");
+      }
+      
+      // Show success message
+      setSuccessMessage("Logged out successfully! Refreshing...");
+      
+      // Force page refresh after a brief delay
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+      
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
   };
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -73,11 +118,16 @@ export default function Navigation() {
       
       if (response.ok) {
         setIsLoggedIn(true);
-        setSuccessMessage("Login successful!");
+        setSuccessMessage("Login successful! Redirecting...");
+        
+        // Store authentication data
         localStorage.setItem('access_token', data.access_token);
+        document.cookie = `access_token=${data.access_token}; path=/`;
+        
+        // Force page refresh after a brief delay
         setTimeout(() => {
-          closeModals();
-        }, 1500);
+          window.location.reload();
+        }, 1000);
       } else {
         setLoginError(data.message || "Login failed. Please check your credentials.");
       }
@@ -114,7 +164,7 @@ export default function Navigation() {
     }
     
     try {
-      const response = await fetch('/signup', {
+      const response = await fetch('http://localhost:5001/signup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -128,17 +178,19 @@ export default function Navigation() {
       const data = await response.json();
       
       if (response.ok) {
-        setSuccessMessage("Account created successfully! You can now login.");
+        setSuccessMessage("Account created successfully! Refreshing...");
+        
+        // Store authentication data
         localStorage.setItem('access_token', data.access_token);
+        document.cookie = `access_token=${data.access_token}; path=/`;
+        
+        // Set login state
+        setIsLoggedIn(true);
+        
+        // Force page refresh after a brief delay
         setTimeout(() => {
-          // Switch to login modal after signup success
-          setShowSignupModal(false);
-          setShowLoginModal(true);
-          setSignupEmail("");
-          setSignupPassword("");
-          setConfirmPassword("");
-          setSuccessMessage("");
-        }, 2000);
+          window.location.reload();
+        }, 1000);
       } else {
         setSignupError(data.message || "Registration failed. Please try again.");
       }
@@ -157,12 +209,23 @@ export default function Navigation() {
           <h1 className="text-2xl font-extrabold mb-8 text-white">MarketEdge</h1>
           
           {isLoggedIn ? (
-            <button
-              className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition-colors mb-6"
-              onClick={() => setIsLoggedIn(false)}
-            >
-              Logout
-            </button>
+            <>
+              <button
+                className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition-colors mb-6"
+                onClick={handleLogout}
+              >
+                Logout
+              </button>
+              
+              <div className="space-y-4">
+                <Link to="/sports" className="block hover:text-olive-light transition-colors">
+                  Home
+                </Link>
+                <Link to="/favorites" className="block hover:text-olive-light transition-colors">
+                  Followed Events
+                </Link>
+              </div>
+            </>
           ) : (
             <button
               className="w-full bg-olive hover:bg-olive-light text-white font-bold py-2 px-4 rounded transition-colors mb-6"
@@ -171,15 +234,6 @@ export default function Navigation() {
               Login
             </button>
           )}
-          
-          <div className="space-y-4">
-            <Link to="/sports" className="block hover:text-olive-light transition-colors">
-              Home
-            </Link>
-            <Link to="/favorites" className="block hover:text-olive-light transition-colors">
-              Followed Events
-            </Link>
-          </div>
         </div>
       </nav>
 

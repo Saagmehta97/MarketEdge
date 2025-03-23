@@ -1,4 +1,5 @@
-import { json, LoaderFunctionArgs } from "@remix-run/node";
+import { createCookie, json, LoaderFunctionArgs } from "@remix-run/node";
+import { parse } from "postcss";
 
 export interface MarketData {
     type: string;
@@ -41,8 +42,23 @@ const API_CONFIG = {
     }
   };
 
+export function parseCookie(cookieHeader: string | null) {
+    if (!cookieHeader) {
+        return null;
+    }
+    const cookie = cookieHeader.split("=");
+    const token = cookie[1];
+    return token;
+}
+
 export function createdSharedLoader(followed: boolean) {
     return async function loader ({ request, params, context }: LoaderFunctionArgs) {
+        const cookieHeader = request.headers.get("Cookie");
+        console.log("cookieHeader: ", typeof(cookieHeader));
+    
+        const token = parseCookie(cookieHeader);
+        // const cookie = parse(cookieHeader || "");
+        // const token = cookie.access_token;
         const url = new URL(request.url);
         const sport = url.searchParams.get("sport")?.toLowerCase() || "all";
         
@@ -61,7 +77,11 @@ export function createdSharedLoader(followed: boolean) {
             eventsUrl.searchParams.append("sport", sport);
             eventsUrl.searchParams.append("followed", followed.toString())
             
-            const eventsResponse = await fetch(eventsUrl.toString());
+            const eventsResponse = await fetch(eventsUrl.toString(), {
+                headers: token ? {
+                    "Authorization": `Bearer ${token}`
+                } : undefined
+            });
             
             if (!eventsResponse.ok) {
             throw new Error(`Failed to fetch events: ${eventsResponse.status}`);
@@ -70,7 +90,7 @@ export function createdSharedLoader(followed: boolean) {
             // Get the data from the backend
             const backendGames = await eventsResponse.json();
             
-            console.log("Games fetched from backend:", backendGames);
+            // console.log("Games fetched from backend:", backendGames);
             
             // Transform the data to match what our frontend expects
             const games = backendGames.map((game: any) => {
@@ -172,9 +192,9 @@ export function createdSharedLoader(followed: boolean) {
             };
             });
             
-            if (games.length > 0) {
-            console.log("Transformed game data:", JSON.stringify(games[0], null, 2));
-            }
+            // if (games.length > 0) {
+            // console.log("Transformed game data:", JSON.stringify(games[0], null, 2));
+            // }
             
             return json<LoaderData>({ games, sport, availableSports });
         } catch (error) {

@@ -5,13 +5,20 @@ from scripts.dbactions import process_db
 from app.sport import get_sports
 import json 
 from datetime import datetime
+from supabase import create_client, Client
+# from db.user import get_user
+
 import os
 
 app = Flask(__name__)
 
-# Add a global variable to store starred/followed events
-# In a production app, this would be stored in a database
-starred_events = set()
+# Initialize Supabase client
+supabase: Client = create_client(
+    os.getenv("SUPABASE_URL"),
+    os.getenv("SUPABASE_KEY")
+)
+
+from db.follow import find_all_events, find_event, update_follow_event, unfollow_event
 
 def retrieve_data(force=False): 
     # Check if we already have data files
@@ -125,9 +132,14 @@ def events():
     Returns:
         Array<EventObject>: List of events matching the criteria
     """
+    all_events = find_all_events(1)
+    print("all_events: ", all_events )
+    starred_events = [event['event_id'] for event in all_events.data]
+    print("starred_events: ", starred_events)
     sport_key = request.args.get('sport', 'all')
-    starred_param = request.args.get('starred', 'false').lower() == 'true'
-    print(f"starred_events: {starred_events}")
+    followed_param = request.args.get('followed', 'false').lower() == 'true'
+    print("followed_param: ", followed_param)
+    # print(f"starred_events: {starred_events}")
     
     try:
         # Load processed games from the file
@@ -150,7 +162,7 @@ def events():
             games = data.get(sport_key, [])
         
         # Filter for starred/followed events if requested
-        if starred_param:
+        if followed_param:
             games = [game for game in games if game.get('id') in starred_events]
         
         # Transform games to match the frontend's expected format
@@ -221,14 +233,21 @@ def star_event(event_id):
     data = request.get_json()
     update_Follow = data.get('follow')
     print(f"update_Follow: {update_Follow}")
-
+    
     if update_Follow:
-        starred_events.add(event_id)
+        if not find_event(event_id, 1):
+            update_follow_event(event_id, 1)
     else:
-        if event_id in starred_events:
-            starred_events.remove(event_id)
+        if find_event(event_id, 1):
+            unfollow_event(event_id, 1)
 
-    print(f"starred_events: {starred_events}")
+    # if update_Follow:
+    #     starred_events.add(event_id)
+    # else:
+    #     if event_id in starred_events:
+    #         starred_events.remove(event_id)
+
+    # print(f"starred_events: {starred_events}")
 
     
     return jsonify({"success": True, "message": f"Event {event_id} updated", "isFollowed": update_Follow})

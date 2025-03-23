@@ -17,14 +17,8 @@ export default function Navigation() {
           <Link to="/sports" className="block hover:text-olive-light transition-colors">
             Home
           </Link>
-          <Link to="/sports" className="block hover:text-olive-light transition-colors">
-            Sports
-          </Link>
           <Link to="/favorites" className="block hover:text-olive-light transition-colors">
-            My Favorites
-          </Link>
-          <Link to="/settings" className="block hover:text-olive-light transition-colors">
-            Settings
+            Followed Events
           </Link>
         </div>
       </div>

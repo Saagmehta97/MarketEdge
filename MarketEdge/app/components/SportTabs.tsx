@@ -75,29 +75,6 @@ export default function SportTabs({ activeSport, availableSports = [] }: SportTa
             {sport.name}
           </Link>
         ))}
-
-        {sports.length > 8 && (
-          <div className="relative inline-block px-4 py-2 text-gray-600">
-            <span className="flex items-center">
-              More Sports
-              <svg
-                className="w-4 h-4 ml-1"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-            </span>
-            {/* Dropdown menu would go here */}
-          </div>
-        )}
       </nav>
     </div>
   );

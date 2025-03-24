@@ -1,0 +1,23 @@
+# flyctl launch added from MarketEdge/.gitignore
+MarketEdge/**/node_modules
+
+MarketEdge/.cache
+MarketEdge/build
+MarketEdge/**/.env
+
+# flyctl launch added from bk/.gitignore
+# Ignore Python cache files
+bk/**/__pycache__
+bk/**/*.py[cod]
+# Ignore environment files
+bk/**/.env
+
+# Ignore debug JSON files
+bk/**/data/debug/*.json
+
+# Ignore other unnecessary files
+bk/**/*.log
+bk/**/*.sqlite3
+bk/**/*.db
+bk/**/venv 
+fly.toml

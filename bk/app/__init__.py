@@ -16,6 +16,10 @@ from flask_jwt_extended import verify_jwt_in_request
 # from db.user import get_user
 
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 app = Flask(__name__)
 

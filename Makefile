@@ -38,6 +38,12 @@ deploy-frontend:
 deploy-backend:
 	cd bk && fly deploy
 
+logs-frontend:
+	cd MarketEdge && fly logs
+
+logs-backend:
+	cd bk && fly logs
+
 # Set backend secrets on Fly.io from .zshrc file
 config-backend-from-zsh-config:
 	cd bk && fly secrets set THE_ODDS_API_KEY="$$(grep 'export THE_ODDS_API_KEY=' ~/.zshrc | cut -d= -f2)"

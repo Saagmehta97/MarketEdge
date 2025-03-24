@@ -7,10 +7,11 @@ help:
 	@echo "  make up         - Start all containers"
 	@echo "  make down       - Stop all containers"
 	@echo "  make clean      - Remove all containers, networks, volumes, and images"
-	@echo "  make backend    - Start backend service only"
-	@echo "  make frontend   - Start frontend service only"
-	@echo "  make set-backend-secrets - Set backend secrets on Fly.io from .env file"
-	@echo "  make set-backend-secrets-from-zsh - Set backend secrets on Fly.io from .zshrc file"
+	@echo "  make deploy-frontend - Deploy frontend to Fly.io"
+	@echo "  make deploy-backend  - Deploy backend to Fly.io"
+	@echo "  make logs-frontend   - Show frontend logs from Fly.io"
+	@echo "  make logs-backend    - Show backend logs from Fly.io"
+	@echo "  make config-backend-from-zsh-config - Set backend secrets on Fly.io from .zshrc file"
 
 
 # DOCKER COMMANDS

@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: odds-comparison-backend
+    ports:
+      - "5001:5001"
+    environment:
+      - THE_ODDS_API_KEY=${THE_ODDS_API_KEY}
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped 

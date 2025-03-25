@@ -32,7 +32,7 @@ export type GameType = {
     isFollowed?: boolean;
   };
 
-const API_CONFIG = {
+export const API_CONFIG = {
     // Use environment variables or fallback to localhost
     baseUrl: import.meta.env.VITE_API_BASE_URL || "http://localhost:5001",
     endpoints: {

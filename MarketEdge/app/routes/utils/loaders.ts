@@ -54,7 +54,7 @@ export function parseCookie(cookieHeader: string | null) {
 export function createdSharedLoader(followed: boolean) {
     return async function loader ({ request, params, context }: LoaderFunctionArgs) {
         const cookieHeader = request.headers.get("Cookie");
-        console.log("cookieHeader: ", typeof(cookieHeader));
+        // console.log("cookieHeader: ", typeof(cookieHeader));
     
         const token = parseCookie(cookieHeader);
         // const cookie = parse(cookieHeader || "");

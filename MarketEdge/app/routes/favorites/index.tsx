@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { json, type MetaFunction } from "@remix-run/node";
-import { useLoaderData } from "@remix-run/react";
+import { useLoaderData, useNavigate } from "@remix-run/react";
 import GameCard from "~/components/GameCard";
 import type { GameType } from "~/routes/sports";
 import { createdSharedLoader, LoaderData } from "../utils/loaders";
@@ -27,6 +27,25 @@ export const action = sharedAction
 export const loader = createdSharedLoader(true)
 export default function FavoritesIndex() {
   const { games, sport, availableSports } = useLoaderData<LoaderData>();
+  const navigate = useNavigate();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  
+  // Check if user is logged in
+  useEffect(() => {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      setIsLoggedIn(true);
+    } else {
+      // Redirect to home page if not logged in
+      navigate("/");
+    }
+  }, [navigate]);
+
+  // If not logged in, don't render the component
+  if (!isLoggedIn) {
+    return null;
+  }
+  
 //   const [followedGames, setFollowedGames] = useState<GameType[]>([]);
 //   const [isLoading, setIsLoading] = useState(true);
   

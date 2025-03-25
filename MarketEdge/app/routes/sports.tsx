@@ -1,6 +1,6 @@
 import { useSearchParams } from "@remix-run/react";
 import { json } from "@remix-run/node";
-import { useLoaderData, useFetcher } from "@remix-run/react";
+import { useLoaderData, useFetcher, useNavigate } from "@remix-run/react";
 import type { LoaderFunction } from "@remix-run/node";
 import GameCard from "~/components/GameCard";
 import SportTabs from "../components/SportTabs";
@@ -62,6 +62,14 @@ export default function Sports() {
   const { games, sport, availableSports } = useLoaderData<LoaderData>();
   const [searchParams] = useSearchParams();
   const fetcher = useFetcher<LoaderData>();
+  const navigate = useNavigate();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  
+  // Check if user is logged in (but don't redirect)
+  useEffect(() => {
+    const token = localStorage.getItem('access_token');
+    setIsLoggedIn(!!token);
+  }, []);
 
   // State for UI filters and game display
   const [filteredGames, setFilteredGames] = useState<GameType[]>(games);
@@ -139,6 +147,12 @@ export default function Sports() {
   
   // Handle starring/following an event
   const handleToggleFollow = (gameId: string) => {
+    if (!isLoggedIn) {
+      // If not logged in, show login modal or redirect to login
+      navigate("/");
+      return;
+    }
+
     // Find the game
     const gameToToggle = filteredGames.find(game => game.id === gameId);
     if (!gameToToggle) {

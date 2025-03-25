@@ -54,20 +54,25 @@ export function parseCookie(cookieHeader: string | null) {
 export function createdSharedLoader(followed: boolean) {
     return async function loader ({ request, params, context }: LoaderFunctionArgs) {
         const cookieHeader = request.headers.get("Cookie");
-        // console.log("cookieHeader: ", typeof(cookieHeader));
-    
         const token = parseCookie(cookieHeader);
-        // const cookie = parse(cookieHeader || "");
-        // const token = cookie.access_token;
         const url = new URL(request.url);
         const sport = url.searchParams.get("sport")?.toLowerCase() || "all";
         
         try {
             // Fetch available sports from our backend
+            console.log("Fetching sports from:", `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.sports}`);
             const sportsResponse = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.sports}`);
             
+            // Log response headers for quota information
+            console.log("Sports API Response Headers:", Object.fromEntries(sportsResponse.headers.entries()));
+            
             if (!sportsResponse.ok) {
-            throw new Error(`Failed to fetch sports: ${sportsResponse.status}`);
+                console.error("Sports API Error:", {
+                    status: sportsResponse.status,
+                    statusText: sportsResponse.statusText,
+                    headers: Object.fromEntries(sportsResponse.headers.entries())
+                });
+                throw new Error(`Failed to fetch sports: ${sportsResponse.status}`);
             }
             
             const availableSports = await sportsResponse.json();
@@ -77,20 +82,35 @@ export function createdSharedLoader(followed: boolean) {
             eventsUrl.searchParams.append("sport", sport);
             eventsUrl.searchParams.append("followed", followed.toString())
             
+            console.log("Fetching events from:", eventsUrl.toString());
             const eventsResponse = await fetch(eventsUrl.toString(), {
-                headers: token ? {
-                    "Authorization": `Bearer ${token}`
-                } : undefined
+                headers: {
+                    ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+                    "Content-Type": "application/json"
+                }
             });
             
+            // Log response headers for quota information
+            console.log("Events API Response Headers:", Object.fromEntries(eventsResponse.headers.entries()));
+            
             if (!eventsResponse.ok) {
-            throw new Error(`Failed to fetch events: ${eventsResponse.status}`);
+                // If we get a 401, return empty data and let the client handle the redirect
+                if (eventsResponse.status === 401) {
+                    console.log("Token expired or invalid");
+                    return json<LoaderData>({ games: [], sport, availableSports });
+                }
+                
+                console.error("Events API Error:", {
+                    status: eventsResponse.status,
+                    statusText: eventsResponse.statusText,
+                    headers: Object.fromEntries(eventsResponse.headers.entries())
+                });
+                throw new Error(`Failed to fetch events: ${eventsResponse.status}`);
             }
             
             // Get the data from the backend
             const backendGames = await eventsResponse.json();
-            
-            // console.log("Games fetched from backend:", backendGames);
+            console.log("Number of games fetched:", backendGames.length);
             
             // Transform the data to match what our frontend expects
             const games = backendGames.map((game: any) => {

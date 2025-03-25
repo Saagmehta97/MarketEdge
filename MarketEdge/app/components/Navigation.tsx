@@ -24,6 +24,8 @@ export default function Navigation() {
     const token = localStorage.getItem('access_token');
     if (token) {
       setIsLoggedIn(true);
+    } else {
+      setIsLoggedIn(false);
     }
   }, []);
   
@@ -124,7 +126,8 @@ export default function Navigation() {
         localStorage.setItem('access_token', data.access_token);
         document.cookie = `access_token=${data.access_token}; path=/`;
         
-        // Force page refresh after a brief delay
+        // Close modal and refresh page
+        closeModals();
         setTimeout(() => {
           window.location.reload();
         }, 1000);
@@ -178,7 +181,7 @@ export default function Navigation() {
       const data = await response.json();
       
       if (response.ok) {
-        setSuccessMessage("Account created successfully! Refreshing...");
+        setSuccessMessage("Account created successfully! Please log in.");
         
         // Store authentication data
         localStorage.setItem('access_token', data.access_token);
@@ -187,10 +190,9 @@ export default function Navigation() {
         // Set login state
         setIsLoggedIn(true);
         
-        // Force page refresh after a brief delay
-        setTimeout(() => {
-          window.location.reload();
-        }, 1000);
+        // Close signup modal and open login modal
+        closeModals();
+        openLoginModal();
       } else {
         setSignupError(data.message || "Registration failed. Please try again.");
       }

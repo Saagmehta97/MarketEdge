@@ -65,7 +65,7 @@ export default function Sports() {
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   
-  // Check if user is logged in (but don't redirect)
+  // Check if user is logged in only for following events
   useEffect(() => {
     const token = localStorage.getItem('access_token');
     setIsLoggedIn(!!token);
@@ -105,12 +105,10 @@ export default function Sports() {
       
       // Apply filters
       if (isLiveOnly) {
-        // In a real app, you would filter based on an isLive property
         newGames = newGames.filter((_game: GameType, index: number) => index % 2 === 0);
       }
       
       if (showOnlyEdges) {
-        // Filter to only show games that have at least one edge
         newGames = newGames.filter((game: GameType) => {
           return game.formatted_markets && game.formatted_markets.some((market: MarketData) => 
             market.data && market.data.some((odds: OddsData) => odds.has_edge)
@@ -124,17 +122,13 @@ export default function Sports() {
   
   // Filter games when filters change or games change
   useEffect(() => {
-    // Start with games
     let newFilteredGames = [...games];
     
-    // Apply filters
     if (isLiveOnly) {
-      // In a real app, you would filter based on an isLive property
       newFilteredGames = newFilteredGames.filter((_game, index) => index % 2 === 0);
     }
     
     if (showOnlyEdges) {
-      // Filter to only show games that have at least one edge
       newFilteredGames = newFilteredGames.filter(game => {
         return game.formatted_markets && game.formatted_markets.some(market => 
           market.data && market.data.some(odds => odds.has_edge)
@@ -148,22 +142,19 @@ export default function Sports() {
   // Handle starring/following an event
   const handleToggleFollow = (gameId: string) => {
     if (!isLoggedIn) {
-      // If not logged in, show login modal or redirect to login
+      // If not logged in, redirect to home page to show login modal
       navigate("/");
       return;
     }
 
-    // Find the game
     const gameToToggle = filteredGames.find(game => game.id === gameId);
     if (!gameToToggle) {
       return;
     }
     
-    // Get the current state and toggle it
     const currentStarred = !!gameToToggle.isFollowed;
     const newStarred = !currentStarred;
     
-    // Update the isFollowed property in our filteredGames state
     setFilteredGames(prev => {
       const updated = prev.map(game => 
         game.id === gameId 

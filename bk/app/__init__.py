@@ -174,12 +174,12 @@ def events():
         Array<EventObject>: List of events matching the criteria
     """
     verify_jwt_in_request(optional=True)
-    user_id = None
+    user_id = get_jwt_identity()  # Get the user ID from the token
     print("user_id: ", user_id)
-    # user_id = get_user()
+    
     if user_id:
         all_events = find_all_events(user_id)
-        print("all_events: ", all_events )
+        print("all_events: ", all_events)
         starred_events = [event['event_id'] for event in all_events.data]
         print("starred_events: ", starred_events)
     else:

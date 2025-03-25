@@ -1,6 +1,6 @@
 import { Link } from "@remix-run/react";
 import { useState, useEffect } from "react";
-
+import { API_CONFIG } from "../routes/utils/loaders";
 export default function Navigation() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -66,7 +66,7 @@ export default function Navigation() {
       
       // Optional: Call logout endpoint on the server if you need to invalidate tokens server-side
       try {
-        await fetch('http://localhost:5001/logout', {
+        await fetch(`${API_CONFIG.baseUrl}/logout`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
@@ -103,7 +103,7 @@ export default function Navigation() {
     }
     
     try {
-      const response = await fetch('http://localhost:5001/login', {
+      const response = await fetch(`${API_CONFIG.baseUrl}/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -164,7 +164,7 @@ export default function Navigation() {
     }
     
     try {
-      const response = await fetch('http://localhost:5001/signup', {
+      const response = await fetch(`${API_CONFIG.baseUrl}/signup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

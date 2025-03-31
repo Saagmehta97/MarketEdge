@@ -295,10 +295,27 @@ def main():
     
     try:
         # Fetch data for all sports
-        sports = ['basketball_nba', 'basketball_ncaab', 'baseball_mlb', 'football_nfl']
+        sports = [
+            'baseball_mlb',
+            'americanfootball_nfl',
+            'basketball_nba',
+            'basketball_wnba',
+            'americanfootball_ncaaf',
+            'mma_mixed_martial_arts',
+            'tennis_atp_us_open',
+            'tennis_wta_us_open',
+            'baseball_kbo',
+            'baseball_npb'
+        ]
+        logger.info(f"Starting to fetch data for sports: {sports}")
         for sport in sports:
-            logger.info(f"Fetching data for {sport}")
-            data = fetch_odds(sport)
+            logger.info(f"Processing sport: {sport}")
+            try:
+                data = fetch_odds(sport)
+                logger.info(f"Successfully fetched data for {sport}")
+            except Exception as e:
+                logger.error(f"Error fetching data for {sport}: {str(e)}")
+                continue
             
             # Save with timestamp
             timestamp = datetime.now().strftime('%Y-%m-%d')

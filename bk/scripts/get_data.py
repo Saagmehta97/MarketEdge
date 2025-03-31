@@ -9,6 +9,11 @@ import time
 my_bookmakers = ['fanduel', 'draftkings','espnbet','williamhill_us']
 sharp_bookmakers = ['pinnacle']
 
+API_KEY = os.getenv('API_KEY')
+if not API_KEY:
+    raise ValueError("API_KEY environment variable is not set")
+
+
 def get_best_odds(books): 
     market_type = list(books.values())[0]['key']
     outcomes = {} 
@@ -247,14 +252,9 @@ def process_games(games):
 
 
 def fetch_odds(sport_key):
-    api_key = os.getenv('THE_ODDS_API_KEY')
-    if not api_key:
-        print("API key not found")
-        return "API key not found. Please set the environment variable 'THE_ODDS_API_KEY'."
-
     url = f'https://api.the-odds-api.com/v4/sports/{sport_key}/odds'
     params = {
-        "apiKey": api_key,
+        "apiKey": API_KEY,
         "bookmakers": ','.join(my_bookmakers + sharp_bookmakers),
         "markets": "h2h,spreads,totals",
         "oddsFormat": "american"
@@ -287,3 +287,39 @@ def fetch_odds(sport_key):
     with open('data/curr_data.json', 'w') as f: 
        json.dump(games,f)
     return filtered_games, quota_used
+
+    
+def main():
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
+    
+        try:
+        # Fetch data for all sports
+        sports = ['basketball_nba', 'basketball_ncaab', 'baseball_mlb', 'football_nfl']
+        for sport in sports:
+            logger.info(f"Fetching data for {sport}")
+            data = fetch_odds(sport)
+            
+            # Save with timestamp
+            timestamp = datetime.now().strftime('%Y-%m-%d')
+            output_dir = os.path.join(os.path.dirname(__file__), '..', 'data')
+            os.makedirs(output_dir, exist_ok=True)
+            
+            # Save timestamped file
+            output_file = os.path.join(output_dir, f'{sport}_data_{timestamp}.json')
+            with open(output_file, 'w') as f:
+                json.dump(data, f, indent=2)
+            
+            # Save latest file
+            latest_file = os.path.join(output_dir, f'{sport}_latest.json')
+            with open(latest_file, 'w') as f:
+                json.dump(data, f, indent=2)
+                
+            logger.info(f"Data saved for {sport}")
+            
+    except Exception as e:
+        logger.error(f"Error in main execution: {e}")
+        raise
+
+if __name__ == "__main__":
+    main()

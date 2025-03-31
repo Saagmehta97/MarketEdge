@@ -39,6 +39,13 @@ jobs:
       run: |
         python scripts/get_data.py
         
+    - name: Debug Git Configuration
+      run: |
+        echo "Checking git configuration..."
+        git config --list
+        echo "Checking repository URL..."
+        git remote -v
+        
     - name: Commit and push if changes
       run: |
         git config --global user.name 'GitHub Actions Bot'

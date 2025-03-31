@@ -36,3 +36,6 @@ data/debug/*.json
 *.db
 venv 
 
+data/
+*.json
+

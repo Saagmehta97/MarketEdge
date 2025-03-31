@@ -308,31 +308,28 @@ def main():
             'baseball_npb'
         ]
         logger.info(f"Starting to fetch data for sports: {sports}")
+        
+        all_data = {}
         for sport in sports:
             logger.info(f"Processing sport: {sport}")
             try:
-                data = fetch_odds(sport)
-                logger.info(f"Successfully fetched data for {sport}")
+                games, quota_used = fetch_odds(sport)
+                if games:
+                    all_data[sport] = games
+                    logger.info(f"Successfully fetched data for {sport}")
             except Exception as e:
                 logger.error(f"Error fetching data for {sport}: {str(e)}")
                 continue
+        
+        # Save all data to curr_data.json
+        output_dir = os.path.join(os.path.dirname(__file__), '..', 'data')
+        os.makedirs(output_dir, exist_ok=True)
+        
+        output_file = os.path.join(output_dir, 'curr_data.json')
+        with open(output_file, 'w') as f:
+            json.dump(all_data, f, indent=2)
             
-            # Save with timestamp
-            timestamp = datetime.now().strftime('%Y-%m-%d')
-            output_dir = os.path.join(os.path.dirname(__file__), '..', 'data')
-            os.makedirs(output_dir, exist_ok=True)
-            
-            # Save timestamped file
-            output_file = os.path.join(output_dir, f'{sport}_data_{timestamp}.json')
-            with open(output_file, 'w') as f:
-                json.dump(data, f, indent=2)
-            
-            # Save latest file
-            latest_file = os.path.join(output_dir, f'{sport}_latest.json')
-            with open(latest_file, 'w') as f:
-                json.dump(data, f, indent=2)
-                
-            logger.info(f"Data saved for {sport}")
+        logger.info("Data saved to curr_data.json")
             
     except Exception as e:
         logger.error(f"Error in main execution: {e}")

@@ -31,6 +31,14 @@ jobs:
         pip install wheel setuptools
         pip install --only-binary :all: greenlet==3.1.1
         pip install -r requirements.txt
+        pip install boto3
+        
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
         
     - name: Fetch new data
       working-directory: ./bk
@@ -39,18 +47,18 @@ jobs:
       run: |
         python scripts/get_data.py
         
-    - name: Debug Git Configuration
+    - name: Upload data to S3
+      working-directory: ./bk
       run: |
-        echo "Checking git configuration..."
-        git config --list
-        echo "Checking repository URL..."
-        git remote -v
-        
-    - name: Commit and push if changes
-      run: |
-        git config --global user.name 'GitHub Actions Bot'
-        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-        # Only stage changes in the data directory
-        git add bk/data/
-        # Only commit if there are changes in the data directory
-        git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update data $(date +'%Y-%m-%d')" && git push https://${{ secrets.PAT_TOKEN }}@github.com/${{ github.repository }}.git)
+        # Upload timestamped files
+        for file in data/*_data_*.json; do
+          if [ -f "$file" ]; then
+            aws s3 cp "$file" "s3://${{ secrets.AWS_S3_BUCKET }}/data/$(basename "$file")"
+          fi
+        done
+        # Upload latest files
+        for file in data/*_latest.json; do
+          if [ -f "$file" ]; then
+            aws s3 cp "$file" "s3://${{ secrets.AWS_S3_BUCKET }}/data/$(basename "$file")"
+          fi
+        done

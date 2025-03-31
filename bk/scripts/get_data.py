@@ -293,7 +293,7 @@ def main():
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)
     
-        try:
+    try:
         # Fetch data for all sports
         sports = ['basketball_nba', 'basketball_ncaab', 'baseball_mlb', 'football_nfl']
         for sport in sports:

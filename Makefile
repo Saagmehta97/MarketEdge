@@ -11,7 +11,7 @@ help:
 	@echo "  make deploy-backend  - Deploy backend to Fly.io"
 	@echo "  make logs-frontend   - Show frontend logs from Fly.io"
 	@echo "  make logs-backend    - Show backend logs from Fly.io"
-	@echo "  make config-backend-from-zsh-config - Set backend secrets on Fly.io from .zshrc file"
+	@echo "  make config-backend-from-env - Set backend secrets on Fly.io from .env file"
 
 
 # DOCKER COMMANDS
@@ -45,8 +45,8 @@ logs-frontend:
 logs-backend:
 	cd bk && fly logs
 
-# Set backend secrets on Fly.io from .zshrc file
-config-backend-from-zsh-config:
-	cd bk && fly secrets set THE_ODDS_API_KEY="$$(grep 'export THE_ODDS_API_KEY=' ~/.zshrc | cut -d= -f2)"
-	cd bk && fly secrets set SUPABASE_URL="$$(grep 'export SUPABASE_URL=' ~/.zshrc | cut -d= -f2)"
-	cd bk && fly secrets set SUPABASE_KEY="$$(grep 'export SUPABASE_KEY=' ~/.zshrc | cut -d= -f2)"
+# Set backend secrets on Fly.io from .env file
+config-backend-from-env:
+	cd bk && fly secrets set THE_ODDS_API_KEY="$(grep 'THE_ODDS_API_KEY=' .env | cut -d= -f2)"
+	cd bk && fly secrets set SUPABASE_URL="$(grep 'SUPABASE_URL=' .env | cut -d= -f2)"
+	cd bk && fly secrets set SUPABASE_KEY="$(grep 'SUPABASE_KEY=' .env | cut -d= -f2)"

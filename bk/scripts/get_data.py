@@ -9,9 +9,10 @@ import time
 my_bookmakers = ['fanduel', 'draftkings','espnbet','williamhill_us']
 sharp_bookmakers = ['pinnacle']
 
-API_KEY = os.getenv('API_KEY')
-if not API_KEY:
-    raise ValueError("API_KEY environment variable is not set")
+# Use THE_ODDS_API_KEY instead of API_KEY
+THE_ODDS_API_KEY = os.getenv('THE_ODDS_API_KEY')
+if not THE_ODDS_API_KEY:
+    raise ValueError("THE_ODDS_API_KEY environment variable is not set")
 
 
 def get_best_odds(books): 
@@ -80,7 +81,7 @@ def find_matching_outcome(outcomes, target):
 def check_alt_line(eventId,market_type,sport,my_outcome):
     event_url = f'https://api.the-odds-api.com/v4/sports/{sport}/events/{eventId}/odds'
     params = {
-        "apiKey" : os.getenv('THE_ODDS_API_KEY'),
+        "apiKey" : THE_ODDS_API_KEY,
         "bookmakers" : "pinnacle",
         "markets" : market_type,
         "oddsFormat" : "american"
@@ -254,7 +255,7 @@ def process_games(games):
 def fetch_odds(sport_key):
     url = f'https://api.the-odds-api.com/v4/sports/{sport_key}/odds'
     params = {
-        "apiKey": API_KEY,
+        "apiKey": THE_ODDS_API_KEY,
         "bookmakers": ','.join(my_bookmakers + sharp_bookmakers),
         "markets": "h2h,spreads,totals",
         "oddsFormat": "american"
@@ -321,15 +322,38 @@ def main():
                 logger.error(f"Error fetching data for {sport}: {str(e)}")
                 continue
         
-        # Save all data to curr_data.json
+        # Create output directory if it doesn't exist
         output_dir = os.path.join(os.path.dirname(__file__), '..', 'data')
         os.makedirs(output_dir, exist_ok=True)
         
+        # Save raw data to curr_data.json
         output_file = os.path.join(output_dir, 'curr_data.json')
         with open(output_file, 'w') as f:
             json.dump(all_data, f, indent=2)
             
-        logger.info("Data saved to curr_data.json")
+        logger.info("Raw data saved to curr_data.json")
+        
+        # Now process the data and save to processed_games.json
+        processed_data = {}
+        for sport, games in all_data.items():
+            try:
+                logger.info(f"Processing games for {sport}")
+                processed_games, _ = process_games(games)
+                processed_data[sport] = processed_games
+                logger.info(f"Processed {len(processed_games)} games for {sport}")
+            except Exception as e:
+                logger.error(f"Error processing games for {sport}: {str(e)}")
+                processed_data[sport] = []
+                
+        # Add timestamp
+        processed_data['last_update'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
+        # Save processed data to processed_games.json
+        processed_file = os.path.join(output_dir, 'processed_games.json')
+        with open(processed_file, 'w') as f:
+            json.dump(processed_data, f, indent=2)
+            
+        logger.info("Processed data saved to processed_games.json")
             
     except Exception as e:
         logger.error(f"Error in main execution: {e}")

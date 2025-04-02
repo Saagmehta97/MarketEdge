@@ -41,4 +41,6 @@ data/
 
 # Ignore cron.log
 cron.log
+.env.cron
+
 

@@ -1,9 +1,9 @@
-# fly.toml app configuration file generated for marketedge-young-morning-3097 on 2025-03-21T20:14:21-04:00
+# fly.toml app configuration file generated for marketedge-old-cherry-689 on 2025-04-01T19:47:17-04:00
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'marketedge-young-morning-3097'
+app = 'marketedge-old-cherry-689'
 primary_region = 'fra'
 
 [build]
@@ -15,10 +15,6 @@ primary_region = 'fra'
   auto_start_machines = true
   min_machines_running = 0
   processes = ['app']
-
-[experimental]
-  auto_start_machines = true
-  auto_stop_machines = true
 
 [[vm]]
   memory = '1gb'

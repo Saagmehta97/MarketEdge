@@ -26,7 +26,7 @@ printenv | grep -v "no_proxy" > /app/.env.cron\n\
 # Setup cron job\n\
 python scripts/setup_cron.py\n\
 # Start cron service\n\
-service cron start\n\
+# service cron start\n\
 # Start the application\n\
 python run.py' > /app/start.sh && chmod +x /app/start.sh
 

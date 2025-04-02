@@ -9,6 +9,7 @@ import time
 my_bookmakers = ['fanduel', 'draftkings','espnbet','williamhill_us']
 sharp_bookmakers = ['pinnacle']
 
+
 # Use THE_ODDS_API_KEY instead of API_KEY
 THE_ODDS_API_KEY = os.getenv('THE_ODDS_API_KEY')
 if not THE_ODDS_API_KEY:

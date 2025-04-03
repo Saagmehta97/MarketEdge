@@ -23,10 +23,15 @@ RUN chmod +x scripts/setup_cron.py scripts/get_data.py
 RUN echo '#!/bin/bash\n\
 # Setup environment variables for cron\n\
 printenv | grep -v "no_proxy" > /app/.env.cron\n\
-# Setup cron job\n\
-python scripts/setup_cron.py\n\
+# Verify environment variables\n\
+if [ -z "$THE_ODDS_API_KEY" ]; then\n\
+    echo "Error: THE_ODDS_API_KEY is not set"\n\
+    exit 1\n\
+fi\n\
 # Start cron service\n\
-# service cron start\n\
+service cron start\n\
+# Setup cron job with error handling\n\
+python scripts/setup_cron.py || echo "Warning: Cron setup failed, continuing..."\n\
 # Start the application\n\
 python run.py' > /app/start.sh && chmod +x /app/start.sh
 

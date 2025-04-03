@@ -33,23 +33,33 @@ supabase: Client = create_client(
 from db.follow import find_all_events, find_event, update_follow_event, unfollow_event
 
 def retrieve_data(force=False): 
-    # Check if we already have data files
+    # Use existing data directory and files
     data_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
-    data_exists = False
+    processed_file = os.path.join(data_dir, 'processed_games.json')
     
-    if os.path.exists(data_dir):
-        # Check if at least one sports data file exists
-        for file in os.listdir(data_dir):
-            if file.endswith('.json') and not file == 'sports.json':
-                data_exists = True
-                break
+    # Check if current data is recent enough
+    if os.path.exists(processed_file) and not force:
+        try:
+            with open(processed_file, 'r') as f:
+                current_data = json.load(f)
+                last_update = datetime.strptime(
+                    current_data.get('last_update', '2000-01-01 00:00:00'),
+                    '%Y-%m-%d %H:%M:%S'
+                )
+                # If data is less than 24 hours old and we're not forcing update
+                age_hours = (datetime.now() - last_update).total_seconds() / 3600
+                print(f"Data age: {age_hours:.2f} hours")
+                
+                if age_hours < 24:
+                    print(f"Using existing data (last updated {last_update})")
+                    return current_data
+                else:
+                    print(f"Data is {age_hours:.2f} hours old. Fetching new data...")
+        except Exception as e:
+            print(f"Error reading current data: {e}")
+            print("Will fetch new data...")
     
-    # If we have data and force is False, don't fetch new data
-    if data_exists and not force:
-        print("Data files already exist. Skipping API call to save quota.")
-        print("To force update, call retrieve_data(force=True)")
-        return
-        
+    # Fetch new data if needed
     quota = 0
     sports = [
         'baseball_mlb',
@@ -67,7 +77,6 @@ def retrieve_data(force=False):
     
     for sport in sports:
         try:
-            # Fetch odds and ensure two values are always returned, default quota_last_used to 0 if not returned
             result = fetch_odds(sport)
             if isinstance(result, tuple):
                 curr_data, quota_last_used = result
@@ -75,14 +84,8 @@ def retrieve_data(force=False):
                 curr_data, quota_last_used = result, 0
             
             quota += quota_last_used
-            
-            # Process data into the database
             process_db(curr_data)
-            
-            # Process games, not database, to get the processed games
             processed_games, _ = process_games(curr_data)
-            
-            # Add processed games to the results
             processed_sports[sport] = processed_games
             print(f"Added {len(processed_games)} games for {sport}")
             
@@ -92,12 +95,13 @@ def retrieve_data(force=False):
     
     processed_sports['last_update'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     
-    # Write the processed games to a JSON file
-    with open('data/processed_games.json', 'w') as f:
+    # Update existing files
+    with open(processed_file, 'w') as f:
         json.dump(processed_sports, f)
+    print("Data updated in processed_games.json")
     
-    print("Data saved to processed_games.json")
-    
+    return processed_sports
+
 @app.route('/')
 def home():
     sport_key = request.args.get('sport', 'basketball_nba')

@@ -4,6 +4,7 @@ import os
 from datetime import datetime, timezone, timedelta
 import logging 
 import time
+from dotenv import load_dotenv
 
 
 my_bookmakers = ['fanduel', 'draftkings','espnbet','williamhill_us']

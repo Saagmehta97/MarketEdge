@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 my_bookmakers = ['fanduel', 'draftkings','espnbet','williamhill_us']
 sharp_bookmakers = ['pinnacle']
 
-
+load_dotenv()
 # Use THE_ODDS_API_KEY instead of API_KEY
 THE_ODDS_API_KEY = os.getenv('THE_ODDS_API_KEY')
 if not THE_ODDS_API_KEY:

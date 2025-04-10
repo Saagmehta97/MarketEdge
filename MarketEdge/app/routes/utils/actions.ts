@@ -34,5 +34,6 @@ export async function sharedAction({ request }: { request: Request }) {
     }
     catch (error) {
       console.error("Error fetching data:", error);
+      return null
     }
   }

@@ -1,10 +1,22 @@
 import { Link } from "@remix-run/react";
-import { useState, useEffect } from "react";
-import { API_CONFIG } from "../routes/utils/loaders";
+import { useState, useEffect, useRef } from "react";
+
+export const API_CONFIG = {
+  // Use environment variables or fallback to localhost
+  baseUrl: import.meta.env.VITE_API_BASE_URL || "http://localhost:5001",
+  endpoints: {
+    sports: "/sports",
+    events: "/events",
+    follow: "/follow"
+  }
+};
+
 export default function Navigation() {
+  // Force isLoggedIn to false for testing
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
+  const loginButtonRef = useRef<HTMLButtonElement>(null);
   
   // Form states
   const [loginEmail, setLoginEmail] = useState("");
@@ -19,15 +31,44 @@ export default function Navigation() {
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   
+  // useEffect(() => {
+  //   // Add direct event listener to login button
+  //   if (loginButtonRef.current) {
+  //     const handleLoginButtonClick = () => {
+  //       setShowLoginModal(true);
+  //     };
+      
+  //     const button = loginButtonRef.current;
+  //     button.addEventListener("click", handleLoginButtonClick);
+      
+  //     return () => {
+  //       button.removeEventListener("click", handleLoginButtonClick);
+  //     };
+  //   }
+  // }, [isLoggedIn]); // Re-run when isLoggedIn changes
+
   // Check if user is already logged in on component mount
   useEffect(() => {
-    const token = localStorage.getItem('access_token');
-    if (token) {
-      setIsLoggedIn(true);
-    } else {
+    try {
+      const token = localStorage.getItem('access_token');
+      if (token) {
+        setIsLoggedIn(true);
+      } else {
+        setIsLoggedIn(false);
+      }
+    } catch (error) {
       setIsLoggedIn(false);
     }
   }, []);
+  
+  // Direct handler function for login button
+  const handleLoginClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    console.log("Login button clicked");
+    e.preventDefault();
+    setLoginError("");
+    setShowLoginModal(true);
+    setShowSignupModal(false);
+  };
   
   const openLoginModal = () => {
     setLoginError("");
@@ -76,7 +117,6 @@ export default function Navigation() {
         });
       } catch (error) {
         // Silent fail on server logout - user is already logged out client-side
-        console.log("Server logout failed, but user was logged out client-side");
       }
       
       // Show success message
@@ -88,7 +128,6 @@ export default function Navigation() {
       }, 1000);
       
     } catch (error) {
-      console.error("Logout error:", error);
     }
   };
 
@@ -136,7 +175,6 @@ export default function Navigation() {
       }
     } catch (error) {
       setLoginError("An error occurred during login. Please try again.");
-      console.error("Login error:", error);
     } finally {
       setIsLoading(false);
     }
@@ -198,18 +236,16 @@ export default function Navigation() {
       }
     } catch (error) {
       setSignupError("An error occurred during registration. Please try again.");
-      console.error("Signup error:", error);
     } finally {
       setIsLoading(false);
     }
   };
-
   return (
-    <>
+    <div>
+      {(() => { return null; })()}
       <nav className="fixed h-screen w-64 bg-black text-white p-6 flex flex-col overflow-y-auto">
         <div className="flex-1">
           <h1 className="text-2xl font-extrabold mb-8 text-white">MarketEdge</h1>
-          
           {isLoggedIn ? (
             <>
               <button
@@ -229,16 +265,26 @@ export default function Navigation() {
               </div>
             </>
           ) : (
-            <button
-              className="w-full bg-olive hover:bg-olive-light text-white font-bold py-2 px-4 rounded transition-colors mb-6"
-              onClick={openLoginModal}
-            >
-              Login
-            </button>
+            <>
+              <button
+                ref={loginButtonRef}
+                className="w-full bg-olive hover:bg-olive-light text-white font-bold py-2 px-4 rounded transition-colors mb-6"
+                onClick={handleLoginClick}
+              >
+                Login
+              </button>
+            </>
           )}
         </div>
       </nav>
-
+      
+      {/* Debug element to verify modal visibility */}
+      {showLoginModal && (
+        <div className="fixed top-0 left-0 bg-red-500 text-white p-2 z-[100]">
+          Debug: Modal should be visible (showLoginModal = {String(showLoginModal)})
+        </div>
+      )}
+      
       {/* Login Modal */}
       {showLoginModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -427,6 +473,6 @@ export default function Navigation() {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
-} 
+};

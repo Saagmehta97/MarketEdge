@@ -29,8 +29,11 @@ def setup_cron_job():
     job = cron.new(command=cmd, comment='marketedge_data_fetch')
     
     # Set the schedule to run at 10 AM EDT (14:00 UTC)
-    job.hour.on(14)  # 14:00 UTC = 10:00 EDT
-    job.minute.on(0)
+    # job.hour.on(14)  # 14:00 UTC = 10:00 EDT
+
+
+    # test every minute
+    job.minute.every(1)
     
     # Write the crontab
     cron.write()

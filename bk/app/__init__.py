@@ -314,5 +314,5 @@ retrieve_data(force=False)
 
 # Setup scheduler
 scheduler = BackgroundScheduler()
-scheduler.add_job(func=lambda: retrieve_data(force=False), trigger="interval", minutes=60)
+scheduler.add_job(func=lambda: retrieve_data(force=True), trigger="interval", hour=14 minute=30)
 scheduler.start()
